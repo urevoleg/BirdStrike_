@@ -30,6 +30,7 @@ def open_archive(date: datetime.date) -> None:
         df = pd.read_excel(io=file_name, sheet_name='data')
         result_df = df[['INDX_NR', 'INCIDENT_DATE ', 'LATITUDE', 'LONGITUDE', 'SPECIES']]
         # И запись в Postgres
+        
         # Перенос файлов в корзину
 
 today_files = open_archive(date=datetime.datetime.now().date())
