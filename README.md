@@ -1,2 +1,2 @@
 # BirdStrike
-PET project. Database about aircraft birdstrike incidents 
+PET project. Database about birdstrike aircraft incidents 
