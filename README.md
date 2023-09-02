@@ -1,2 +1,137 @@
 # BirdStrike
+<<<<<<< HEAD
+PET project. Database about aircraft birdstrike incidents 
+
+
+https://wildlife.faa.gov/search -- ссылка-источник для получения данных об инцидентах с животными
+Date Range From: 2018-01-01
+За 5 лет - это слишком много
+Лучше брать небольшими кусочками по 1 году или менее
+Date Range To: 2022-01-01
+
+
+
+
+
+
+
+Column Name Explanation of Column Name and Codes
+INDEX NR Individual record number
+OPID Airline operator code
+OPERATOR
+A three letter International Civil Aviation Organization code for aircraft operators. (BUS = business, PVT = private aircraft other than business, GOV =
+government aircraft, MIL - military aircraft.)
+ATYPE Aircraft
+AMA International Civil Aviation Organization code for Aircraft Make
+AMO International Civil Aviation Organization code for Aircraft Model
+EMA Engine Make Code (see Engine Codes tab below)
+EMO Engine Model Code (see Engine Codes tab below)
+AC_CLASS Type of aircraft (see Aircraft Type tab below)
+AC_MASS 1 = 2,250 kg or less: 2 = ,2251-5700 kg: 3 = 5,701-27,000 kg: 4 = 27,001-272,000 kg: 5 = above 272,000 kg
+NUM_ENGS Number of engines
+TYPE_ENG Type of power A = reciprocating engine (piston): B = Turbojet: C = Turboprop: D = Turbofan: E = None (glider): F = Turboshaft (helicopter): Y = Other
+ENG_1_POS Where engine # 1 is mounted on aircraft (see Engine Position tab below)
+ENG_2_POS Where engine # 2 is mounted on aircraft (see Engine Position tab below)
+ENG_3_POS Where engine # 3 is mounted on aircraft (see Engine Position tab below)
+ENG_4_POS Where engine # 4 is mounted on aircraft (see Engine Position tab below)
+REG Aircraft registration
+FLT Flight number
+REMAINS_COLLECTED Indicates if bird or wildlife remains were found and collected
+REMAINS_SENT Indicates if remains were sent to the Smithsonian Institution for identifcation
+INCIDENT_DATE Date strike occurred
+INCIDENT_MONTH Month strike occurred
+INCIDENT_YEAR Year strike occurred
+TIME_OF_DAY Light conditions
+TIME Hour and minute in local time
+AIRPORT_ID International Civil Aviation Organization airport identifier for location of strike whether it was on or off airport
+AIRPORT Name of airport
+STATE State
+FAAREGION FAA Region where airport is located
+ENROUTE If strike did not occur on approach, climb, landing roll, taxi or take-off, aircraft was enroute. This shows location.
+RUNWAY Runway
+LOCATION
+Various information about aircraft location if enroute or airport where strike evidence was found. Some locations show the two airports for the flight
+departure and arrival if pilot was unaware of the strike.
+HEIGHT Feet Above Ground Level
+SPEED Knots (indicated air speed)
+DISTANCE Nautical miles from airport
+PHASE_OF_FLT Phase of flight during which strike occurred
+DAMAGE Level of damage selected by the Database Manager. See below for ICAO definitions taken from ICAO IBIS Manual Fourth Edition-2001
+Blank Unknown
+N = None No damage was reported.
+M = Minor When the aircraft can be rendered airworthy by simple repairs or replacements and an extensive inspection is not necessary.
+M? = Undetermined level The aircraft was damaged, but details as to the extent of the damage are lacking.
+S = Substantial
+When the aircraft incurs damage or structural failure which adversely affects the structure strength, performance or flight characteristics of the aircraft
+and which would normally require major repair or replacement of the affected component. Bent fairings or cowlings; small dents or puncture holes in
+the skin; damage to wing tips, antennae, tires or brakes; and engine blade damage not requiring blade replacement are specifically excluded.
+D = Destroyed When the damage sustained makes it inadvisable to restore the aircraft to an airworthy condition.
+STR_RAD Struck radome
+DAM_RAD Damaged radome
+STR_WINDSHLD Struck windshield
+DAM_WINDSHLD Damaged windshield
+STR_NOSE Struck nose
+DAM_NOSE Damaged nose
+STR_ENG1 Struck Engine 1
+DAM_ENG1 Damaged Engine 1
+ING_ENG1 Ingested Engine 1
+STR_ENG2 Struck Engine 2
+DAM_ENG2 Damaged Engine 2
+ING_ENG2 Ingested Engine 2
+STR_ENG3 Struck Engine 3
+DAM_ENG3 Damaged Engine 3
+ING_ENG3 Ingested Engine 3
+STR_ENG4 Struck Engine 4
+DAM_ENG4 Damaged Engine 4
+ING_ENG4 Ingested Engine 4
+INGESTED_OTHER Wildlife ingested in a location other than an engine, effective 3/29/2021 (ALL ingestions for strikes submitted prior to 3/29/2021 are shown here)
+STR_PROP Struck Propeller
+DAM_PROP Damaged Propeller
+STR_WING_ROT Struck Wing or Rotor
+DAM_WING_ROT Damaged Wing or Rotor
+STR_FUSE Struck Fuselage
+DAM_FUSE Damaged Fuselage
+STR_LG Struck Landing Gear
+DAM_LG Damaged Landing Gear
+STR_TAIL Struck Tail
+DAM_TAIL Damaged Tail
+STR_LGHTS Struck Lights
+DAM_LGHTS Damaged Lights
+STR_OTHER Struck Other than parts shown above
+DAM_OTHER Damaged Other than parts shown above
+OTHER_SPECIFY What part was struck other than those listed above
+EFFECT Effect on flight
+EFFECT_OTHER Effect on flight other than those listed on the form
+SKY Type of cloud cover, if any
+PRECIP Precipitation
+BIRD_BAND_NUMBER Bird Band Number associated with the wildlife struck
+SPECIES_ID International Civil Aviation Organization code for type of bird or other wildlife
+SPECIES Common name for bird or other wildlife
+BIRDS_SEEN Number of birds/wildlife seen by pilot
+BIRDS_STRUCK Number of birds/wildlife struck
+SIZE
+Size of bird as reported by pilot is a relative scale. Entry should reflect the perceived size as opposed to a scientifically determined value. If more than
+one species was struck, larger bird is entered.
+WARNED Pilot warned of birds/wildlife
+COMMENTS As entered by database manager. Can include name of aircraft owner, types of reports received, updates, etc.
+REMARKS Most of remarks are from the form but some are data entry notes and are usually in parentheses.
+AOS Time aircraft was out of service in hours. If unknown, it is blank.
+COST_REPAIRS Estimated cost of repairs of replacement in dollars (USD)
+COST_OTHER
+Estimated other costs, other than those in previous field in dollars (USD). May include loss of revenue, hotel expenses due to flight cancellation, costs
+of fuel dumped, etc.
+COST_REPAIRS_INFL_ADJ Costs adjusted to the most recent year based on Consumer Price Index, U.S. Department of Labor. Inflation-adjusted costs are updated annually.
+COST_OTHER_INFL_ADJ Costs adjusted to the most recent year based on Consumer Price Index, U.S. Department of Labor. Inflation-adjusted costs are updated annually.
+REPORTED_NAME Name(s) of person(s) filing report
+REPORTED_TITLE Title(s) of person(s) filing report
+REPORTED_DATE Date report was written
+SOURCE Type of report. Note: for multiple types of reports this will be indicated as Multiple. See "Comments" field for details
+PERSON Only one selection allowed. For multiple reports, see field "Reported Title"
+NR_INJURIES Number of people injured
+NR_FATALITIES Number of human fatalities
+LUPDATE Last time record was updated
+TRANSFER Unused field at this time
+INDICATED_DAMAGE Indicates whether or not aircraft was damaged
+=======
 PET project. Database about birdstrike aircraft incidents 
+>>>>>>> origin/main
