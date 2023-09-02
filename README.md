@@ -135,3 +135,37 @@ INDICATED_DAMAGE Indicates whether or not aircraft was damaged
 =======
 PET project. Database about birdstrike aircraft incidents 
 >>>>>>> origin/main
+
+
+
+
+
+
+
+
+#######
+
+
+Данные по станциям
+https://www.ncei.noaa.gov/access/search/data-search/global-summary-of-the-day?startDate=2018-01-01T00:00:00&endDate=2018-01-31T23:59:59&pageNum=1&stations=99999963826
+
+
+TEMP - Mean temperature (.1 Fahrenheit)
+DEWP - Mean dew point (.1 Fahrenheit)
+SLP - Mean sea level pressure (.1 mb)
+STP - Mean station pressure (.1 mb)
+VISIB - Mean visibility (.1 miles)
+WDSP – Mean wind speed (.1 knots)
+MXSPD - Maximum sustained wind speed (.1 knots)
+GUST - Maximum wind gust (.1 knots)
+MAX - Maximum temperature (.1 Fahrenheit)
+MIN - Minimum temperature (.1 Fahrenheit)
+PRCP - Precipitation amount (.01 inches)
+SNDP - Snow depth (.1 inches)
+FRSHTT – Indicator for occurrence of:
+ Fog
+ Rain or Drizzle
+ Snow or Ice Pellets
+ Hail
+ Thunder
+ Tornado/Funnel Cloud

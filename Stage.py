@@ -16,6 +16,7 @@ from congig import Config
 config = Config()
 log = logging.getLogger(__name__)
 
+downloaded_files_list = os.listdir(f"{os.getcwd()}/Downloads")
 
 def load_incidents(date: datetime.date,
                  pg_connect) -> None:
@@ -26,9 +27,8 @@ def load_incidents(date: datetime.date,
     :param date:
     :return: None
     """
-    arcive_list = os.listdir(f"{os.getcwd()}/Downloads")
     result_files_list = []
-    for archive in arcive_list:
+    for archive in downloaded_files_list:
         with zipfile.ZipFile(f"{os.getcwd()}/Downloads/{archive}") as archive_file:
             files_list = archive_file.namelist()
             for file in files_list:
@@ -37,12 +37,12 @@ def load_incidents(date: datetime.date,
                 result_files_list.append(f"{os.getcwd()}/Archives/{date}/{file}")
     for file_name in result_files_list:
         df = pd.read_excel(io=file_name, sheet_name='data')
-        result_df = df[['INDX_NR', 'INCIDENT_DATE ', 'LATITUDE', 'LONGITUDE', 'AIRPORT_ID', 'SPECIES']]
+        result_df = df[['INDX_NR', 'INCIDENT_DATE ', 'LATITUDE', 'LONGITUDE', 'AIRPORT', 'AIRPORT_ID', 'SPECIES']]
         result_df.rename(columns={'INCIDENT_DATE ': 'INCIDENT_DATE'}, inplace=True)
         log.info(f"Подготовлен Dataframe c {result_df.shape[0]} записями")
         schema = "STAGE"
         table_name = "aircraft_incidents"
-        columns = 'INDX_NR, INCIDENT_DATE, LATITUDE, LONGITUDE, SPECIES'
+        columns = 'INDX_NR, INCIDENT_DATE, LATITUDE, LONGITUDE, AIRPORT, AIRPORT_ID, SPECIES'
         with pg_connect.connection() as connect:
             cursor = connect.cursor()
             unloaded_rows = []
@@ -50,7 +50,8 @@ def load_incidents(date: datetime.date,
                 query = f"""
                             INSERT INTO {schema}.{table_name} ({columns}) VALUES
                             ('{row.INDX_NR}', '{row.INCIDENT_DATE}', '{row.LATITUDE}',
-                                '{row.LONGITUDE}', {row.AIRPORT_ID}, '{row.SPECIES.replace("'", '')}')"""
+                                '{row.LONGITUDE}', '{row.AIRPORT.replace("'", '')}', '{row.AIRPORT_ID}', 
+                                '{row.SPECIES.replace("'", '')}')"""
                 try:
                     cursor.execute(query)
                 except Exception as e:
@@ -63,7 +64,15 @@ def load_incidents(date: datetime.date,
                 for record in unloaded_rows:
                     log.warning(record)
 
-load_incidents(date=datetime.datetime.now().date(),
-              pg_connect=config.pg_warehouse_db())
+# load_incidents(date=datetime.datetime.now().date(),
+#               pg_connect=config.pg_warehouse_db())
 
+
+with config.pg_warehouse_db().connection() as connect:
+    cursor = connect.cursor()
+    cursor.execute("""SELECT id FROM DDS.observation_station;""")
+    for station in cursor.fetchall():
+        if f"{station[0]}.csv" in downloaded_files_list:
+            df = pd.read_csv(f"{os.getcwd()}/Downloads/{station[0]}.csv")
+            print(df.head(5))
 
