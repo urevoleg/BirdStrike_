@@ -32,14 +32,13 @@ class DdsControler:
             """)
             connect.commit()
 
-    def upload_weather_observation(self, table_name: str) -> None:
+    def upload_weather_observation(self, table_name: str, date: str) -> None:
         with self.pg_connect.connection() as connect:
             connect.autocommit = False
             cursor = connect.cursor()
-            date = '2018-01-01'
             chosen_week = datetime.strptime(date, '%Y-%m-%d').date().strftime("%V")
             chosen_year = datetime.strptime(date, '%Y-%m-%d').year
-            cursor.execute(f"""
+            query = f"""
                    INSERT INTO {self.schema}.{table_name}
                    (STATION, DATE, LATITUDE, LONGITUDE, ELEVATION, NAME, TEMP,
                    TEMP_ATTRIBUTES, DEWP, DEWP_ATTRIBUTES, SLP, SLP_ATTRIBUTES, STP, STP_ATTRIBUTES,
@@ -47,7 +46,7 @@ class DdsControler:
                    MIN, MIN_ATTRIBUTES, PRCP, PRCP_ATTRIBUTES, SNDP, FRSHTT)
         
                    SELECT
-                               STATION, 
+                               DISTINCT STATION, 
                                DATE::date,
                                LATITUDE::DOUBLE PRECISION,
                                LONGITUDE::DOUBLE PRECISION,
@@ -57,12 +56,13 @@ class DdsControler:
                            MIN, MIN_ATTRIBUTES, PRCP, PRCP_ATTRIBUTES, SNDP, FRSHTT
                            FROM STAGE.weather_observation
                            WHERE 1=1 
-                                and DATE_PART('week', DATE::date) = {chosen_week}
-                                and EXTRACT('Year' FROM DATE::date) = {chosen_year}
-                                and STATION NOT IN (
+                                and EXTRACT('Year' FROM DATE::date) = {chosen_year} -- год совпадает с годом выборки
+                                and STATION NOT IN ( 
                                                     SELECT STATION FROM DDS.weather_observation
-                                                    WHERE DATE_PART('week', DATE::date) = {chosen_week}
+                                                    WHERE 1=1 
+                                                    and DATE_PART('week', DATE::date) = {chosen_week}
                                                     and EXTRACT('Year' FROM DATE::date) = {chosen_year}
-                                                    )
-                   ;""")
+                                                    ); -- id станции нет среди всех id за выбранный год и за выбранную неделю
+                                                    """
+            cursor.execute(query)
             connect.commit()

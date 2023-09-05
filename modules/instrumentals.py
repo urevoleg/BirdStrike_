@@ -1,6 +1,8 @@
 import os
 from datetime import datetime, timedelta
 from connections import PgConnect
+from bs4 import BeautifulSoup
+import pandas as pd
 
 
 def years_extractor(start_date: str,
@@ -38,3 +40,19 @@ def clean_directory(full_path):
         os.remove(full_path)
     except:
         pass
+
+
+def table_extractor(html):
+    soup = BeautifulSoup(html, 'lxml')
+    table1 = soup.find('table', cellspacing="1")
+    headers = []
+    for i in table1.find_all('th'):
+        title = i.text
+        headers.append(title)
+    table = pd.DataFrame(columns=headers)
+    for j in table1.find_all('tr')[1:]:
+        row_data = j.find_all('td')
+        row = [i.text for i in row_data]
+        length = len(table)
+        table.loc[length] = row
+    return table

@@ -1,5 +1,7 @@
 CREATE SCHEMA IF NOT EXISTS STAGE;
 CREATE SCHEMA IF NOT EXISTS DDS;
+CREATE SCHEMA IF NOT EXISTS CDM;
+
 
 CREATE TABLE IF NOT EXISTS STAGE.aircraft_incidents
     (indx_nr varchar(40),
@@ -43,6 +45,21 @@ CREATE TABLE IF NOT EXISTS STAGE.weather_observation
     FRSHTT varchar(40)
     );
 
+
+CREATE TABLE IF NOT EXISTS STAGE.top_ten_airports
+(id serial,
+    airport_id varchar(40),
+    airport_name varchar(200),
+    Year varchar(20),
+    month varchar(20),
+    origin_domestic varchar(20),
+    origin_international varchar(20),
+    origin_total varchar(20),
+    destination_domestic varchar(20),
+    destination_international varchar(20),
+    destination_total varchar(20),
+    report_dt date
+    );
 
 
 
@@ -725,3 +742,37 @@ values
 ('74486514719'),
 ('72012063837'),
 ('99999923803');
+
+
+CREATE TABLE IF NOT EXISTS DDS.airport_bts_name
+    (id varchar(50) primary key,
+    bts_name varchar null);
+
+INSERT INTO DDS.airport_bts_name -- заполнение id всех наблюдательных станций
+(id, bts_name)
+values
+('KDEN', '- DENVER, CO: Denver international'),
+('KDFW', '- DALLAS/FORT WORTH'),
+('KORD', '- CHICAGO, IL: CHICAGO OHARE'),
+('KATL', '- Atlanta, GA: Hartsfield-Jackson Atlanta international'),
+('KDTW', '- DETROIT, ML: DETROIT METRO WAYNE COUNTY'),
+('KMEM', '- MEMPHIS, TN: MEMPHIS international'),
+('KJFK', '- New York, NY: John F. Kennedy International'),
+('KMCO', '- Orlando, FL: Orlando International'),
+('KCLT', '- CHARLOTTE, NC: Charlotte/Douglas International'),
+('KSLC', '- Salt Lake City, UT: Salt Lake City International');
+
+
+CREATE TABLE IF NOT EXISTS STG.top_ten_airports
+(id serial primary key,
+    airport_id varchar(40),
+    airport_name varchar(200),
+    Year int,
+    month int,
+    origin_domestic float,
+    origin_international float,
+    origin_total float,
+    destination_domestic float,
+    destination_international float,
+    destination_total float
+    );
