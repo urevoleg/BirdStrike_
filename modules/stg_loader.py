@@ -10,7 +10,7 @@ import pandas as pd
 
 
 from modules.instrumentals import clean_directory, table_extractor
-from connections import PgConnect
+from modules.connections import PgConnect
 
 
 class StgControler:

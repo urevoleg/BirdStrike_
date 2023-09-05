@@ -1,5 +1,4 @@
-from connections import PgConnect
-import os
+from modules.connections import PgConnect
 
 
 class Config:

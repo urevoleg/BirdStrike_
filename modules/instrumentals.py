@@ -1,6 +1,5 @@
 import os
 from datetime import datetime, timedelta
-from connections import PgConnect
 from bs4 import BeautifulSoup
 import pandas as pd
 
