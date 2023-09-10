@@ -1,9 +1,9 @@
 import os
 import logging
 import datetime
-from config import Config
-from modules.stg_loader import StgControler
-from modules.instrumentals import years_extractor, get_stations, get_unfield_stations
+from Airflow.modules.config import Config
+from Airflow.modules.stg_loader import StgControler
+from Airflow.modules.instrumentals import years_extractor, get_stations, get_unfield_stations
 from airflow import DAG
 from airflow.operators.python import PythonOperator
 

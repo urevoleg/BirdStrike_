@@ -1,5 +1,4 @@
 from contextlib import contextmanager
-from typing import Generator
 from psycopg2 import connect
 
 

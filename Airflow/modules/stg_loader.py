@@ -9,8 +9,8 @@ from selenium.webdriver.common.by import By
 import pandas as pd
 
 
-from modules.instrumentals import clean_directory, table_extractor
-from modules.connections import PgConnect
+from Airflow.modules.instrumentals import clean_directory, table_extractor
+from Airflow.modules.connections import PgConnect
 
 
 class StgControler:

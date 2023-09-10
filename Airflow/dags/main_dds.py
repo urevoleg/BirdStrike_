@@ -1,9 +1,8 @@
-import os
 import logging
 import datetime
-from config import Config
-from modules.dds_loader import DdsControler
-from modules.cdm_loader import CdmControler
+from Airflow.modules.config import Config
+from Airflow.modules.dds_loader import DdsControler
+from Airflow.modules.cdm_loader import CdmControler
 from airflow import DAG
 from airflow.operators.python import PythonOperator
 

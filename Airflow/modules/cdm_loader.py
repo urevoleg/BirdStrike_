@@ -1,5 +1,5 @@
 from datetime import datetime
-from modules.connections import PgConnect
+from Airflow.modules.connections import PgConnect
 
 class CdmControler:
     def __init__(self, date: datetime.date,

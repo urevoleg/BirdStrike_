@@ -1,4 +1,4 @@
-from modules.connections import PgConnect
+from Airflow.modules.connections import PgConnect
 
 
 class Config:
