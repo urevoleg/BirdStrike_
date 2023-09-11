@@ -36,4 +36,5 @@ with DAG(
     task_weather_data = PythonOperator(
         task_id='download_weather_data',
         python_callable=dds_uploads.upload_weather_observation,
-        op_kwargs={'table_name': 'weather_observation'})
+        op_kwargs={'table_name': 'weather_observation',
+                   'date': "2022-12-31"})

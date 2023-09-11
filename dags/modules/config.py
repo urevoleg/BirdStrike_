@@ -4,8 +4,8 @@ import os
 class Config:
 
     def __init__(self) -> None:
-        self.pg_warehouse_host = os.environ.get("HOST")# 'birdstrike-postgres-1'
-        self.pg_warehouse_port = 6432
+        self.pg_warehouse_host = 'birdstrike-database-1'
+        self.pg_warehouse_port = 5432
         self.pg_warehouse_dbname = "airflow"
         self.pg_warehouse_user = "airflow"
         self.pg_warehouse_password = "airflow"

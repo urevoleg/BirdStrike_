@@ -90,18 +90,30 @@ x-airflow-common:
 
 services:
   postgres:
+    image: postgres:13
+    environment:
+      POSTGRES_USER: airflow
+      POSTGRES_PASSWORD: airflow
+      POSTGRES_DB: airflow
+    volumes:
+      - postgres-db-volume:/var/lib/postgresql/data
+    healthcheck:
+      test: [ "CMD", "pg_isready", "-U", "airflow" ]
+      interval: 5s
+      retries: 5
+    restart: always
+
+  database:
     build:
       dockerfile: Database/Dockerfile
-    #image: postgres:13
     environment:
       POSTGRES_USER: airflow
       POSTGRES_PASSWORD: airflow
       POSTGRES_DB: airflow
     ports:
-      - 6432:5432  # возможно первый порт придется заменить, если он уже занят хххх:5432
+      - 6432:5432
     volumes:
-      - postgres-db-volume:/var/lib/postgresql/data
-      #- ${AIRFLOW_PROJ_DIR:-.}/Database:/docker-entrypoint-initdb.d
+      - ${AIRFLOW_PROJ_DIR:-.}/Database:/docker-entrypoint-initdb.d
     healthcheck:
       test: ["CMD", "pg_isready", "-U", "airflow"]
       interval: 10s
