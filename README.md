@@ -19,8 +19,10 @@ PET project. Database about aircraft birdstrike incidents
 На текущем этапе разработки проект запускается локально с использованием базы данных в docker  
 Файл docker-compose.yaml с помощью команды docker-compose up -d создает докер-контейнер с СУБД POSTGRESQL  
 Проверить работостособность базы данных можно внутри контейнера с помощью команды:
-docker exec -it birdstrike_database_1 psql -U docker_app -d docker_app_db
+docker exec -it birdstrike-postgres-1 psql -U docker_app -d docker_app_db
 Далее можно вводить sql команды через командну строку
+
+
 
 
 Этапы выполнения кода
@@ -63,11 +65,29 @@ docker exec -it birdstrike_database_1 psql -U docker_app -d docker_app_db
         пустая
 
 
+
+docker exec -it birdstrike-airflow-scheduler-1 bash
+docker exec -it birdstrike-airflow-worker-1 bash
+docker cp requirements.txt  birdstrike-airflow-worker-1:/.
+
+pip install selenium
+
+pip install psycopg2-binary==2.8
+
+
+
+
+
+
+
 https://wildlife.faa.gov/search -- ссылка-источник для получения данных об инцидентах с животными
 Date Range From: 2018-01-01
 За 5 лет - это слишком много
 Лучше брать небольшими кусочками по 1 году или менее
 Date Range To: 2022-01-01
+
+
+
 
 
 
@@ -229,3 +249,4 @@ FRSHTT – Indicator for occurrence of:
  Hail
  Thunder
  Tornado/Funnel Cloud
+
