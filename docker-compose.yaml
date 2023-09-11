@@ -1,36 +1,18 @@
-version: '1'
-
 services:
   database:
-    ports:
-      - 6432:5432  # возможно первый порт придется заменить, если он уже занят хххх:5432
-    environment:
-      POSTGRES_DB: docker_app_db
-      POSTGRES_USER: docker_app
-      POSTGRES_PASSWORD: docker_app
-    #env_file:
-    #  - .env
     build:
       dockerfile: Database/Dockerfile
-
-#    volumes:
-    networks:
-      - bird_strike_common
-    restart: always
+    environment:
+      POSTGRES_USER: airflow
+      POSTGRES_PASSWORD: airflow
+      POSTGRES_DB: airflow
+    ports:
+      - 6432:5432
+    volumes:
+      - ${AIRFLOW_PROJ_DIR:-.}/Database:/docker-entrypoint-initdb.d
     healthcheck:
-      test: [ "CMD -SHELL", "pg_isready", "-U", "docker_app" ]
-      interval: 5s
-      timeout: 5s
-      retries: 3
-    deploy:
-      replicas: 1
-
-
-networks:
-  bird_strike_common:
-    name: bird_strike_common
-volumes:
-  random_db_stage:
-    name: random_db_stage
-
-
+      test: ["CMD", "pg_isready", "-U", "airflow"]
+      interval: 10s
+      retries: 5
+      start_period: 5s
+    restart: always

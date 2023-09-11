@@ -2,6 +2,14 @@ CREATE SCHEMA IF NOT EXISTS STAGE;
 CREATE SCHEMA IF NOT EXISTS DDS;
 CREATE SCHEMA IF NOT EXISTS CDM;
 
+DO $$
+BEGIN
+CREATE ROLE airflow superuser;
+EXCEPTION WHEN duplicate_object THEN RAISE NOTICE '%, skipping', SQLERRM USING ERRCODE = SQLSTATE;
+END
+$$;
+
+ALTER ROLE airflow login;
 
 CREATE TABLE IF NOT EXISTS STAGE.aircraft_incidents
     (indx_nr varchar(40),
@@ -75,36 +83,36 @@ CREATE TABLE IF NOT EXISTS DDS.aircraft_incidents
     );
 
 
---CREATE TABLE IF NOT EXISTS DDS.weather_observation
---    (STATION varchar(40),
---    DATE date,
---    LATITUDE DOUBLE PRECISION,
---    LONGITUDE DOUBLE PRECISION,
---    ELEVATION varchar(40),
---    NAME varchar(100),
---    TEMP varchar(200), -- Mean temperature (.1 Fahrenheit)
---    TEMP_ATTRIBUTES varchar(40),
---    DEWP varchar(40), -- Mean dew point (.1 Fahrenheit)
---    DEWP_ATTRIBUTES varchar(40),
---    SLP varchar(40),
---    SLP_ATTRIBUTES varchar(40),
---    STP varchar(40),
---    STP_ATTRIBUTES varchar(40),
---    VISIB varchar(40), -- Mean visibility (.1 miles)
---    VISIB_ATTRIBUTES varchar(40),
---    WDSP varchar(40), --WDSP – Mean wind speed (.1 knots)
---    WDSP_ATTRIBUTES varchar(40),
---    MXSPD varchar(40), --MXSPD - Maximum sustained wind speed (.1 knots)
---    GUST varchar(40), -- Maximum wind gust (.1 knots)
---    MAX varchar(40), -- Maximum temperature (.1 Fahrenheit)
---    MAX_ATTRIBUTES varchar(40),
---    MIN varchar(40), -- Minimum temperature (.1 Fahrenheit)
---    MIN_ATTRIBUTES varchar(40),
---    PRCP varchar(40), -- Precipitation amount (.01 inches)
---    PRCP_ATTRIBUTES varchar(40),
---    SNDP varchar(40), -- Snow depth (.1 inches)
---    FRSHTT varchar(40)
---    );
+CREATE TABLE IF NOT EXISTS DDS.weather_observation
+    (STATION varchar(40),
+    DATE date,
+    LATITUDE DOUBLE PRECISION,
+    LONGITUDE DOUBLE PRECISION,
+    ELEVATION varchar(40),
+    NAME varchar(100),
+    TEMP varchar(200), -- Mean temperature (.1 Fahrenheit)
+    TEMP_ATTRIBUTES varchar(40),
+    DEWP varchar(40), -- Mean dew point (.1 Fahrenheit)
+    DEWP_ATTRIBUTES varchar(40),
+    SLP varchar(40),
+    SLP_ATTRIBUTES varchar(40),
+    STP varchar(40),
+    STP_ATTRIBUTES varchar(40),
+    VISIB varchar(40), -- Mean visibility (.1 miles)
+    VISIB_ATTRIBUTES varchar(40),
+    WDSP varchar(40), --WDSP – Mean wind speed (.1 knots)
+    WDSP_ATTRIBUTES varchar(40),
+    MXSPD varchar(40), --MXSPD - Maximum sustained wind speed (.1 knots)
+    GUST varchar(40), -- Maximum wind gust (.1 knots)
+    MAX varchar(40), -- Maximum temperature (.1 Fahrenheit)
+    MAX_ATTRIBUTES varchar(40),
+    MIN varchar(40), -- Minimum temperature (.1 Fahrenheit)
+    MIN_ATTRIBUTES varchar(40),
+    PRCP varchar(40), -- Precipitation amount (.01 inches)
+    PRCP_ATTRIBUTES varchar(40),
+    SNDP varchar(40), -- Snow depth (.1 inches)
+    FRSHTT varchar(40)
+    );
 
 CREATE TABLE IF NOT EXISTS DDS.observation_station
     (id varchar(50) primary key,
