@@ -69,7 +69,7 @@ class DdsControler:
                     airport, 
                     species 
                 FROM DDS.aircraft_incidents incidents
-                WHERE indx_nr not in (SELECT index_incedent FROM DDS.incident_station_link)),
+                WHERE indx_nr not in (SELECT incident FROM DDS.incident_station_link)),
             stations as (
                 SELECT
                     station, geo_data, start_date, end_date
@@ -137,7 +137,7 @@ class DdsControler:
                                             ) as row_number,
                                             seconds
                 FROM pre)
-                SELECT station, incident, inc_ddtm, WND, CIG, VIS, TMP, DEW, SLP
+                SELECT DISTINCT station, incident, inc_ddtm, WND, CIG, VIS, TMP, DEW, SLP
                 FROM result
                 WHERE row_number=1
                 ;

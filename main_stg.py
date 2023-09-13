@@ -15,7 +15,7 @@ log = logging.getLogger(__name__)
 [os.mkdir(name) for name in ["Archives", "Downloads", "Unresolved"] if name not in os.listdir()]
 
 
-def weather_data(controller: StgControler) -> None:
+def weather_data(controller: StgControler, lag: int) -> None:
     with controller.pg_connect.connection() as connection:
         cursor = connection.cursor()
         cursor.execute(f"""TRUNCATE TABLE STAGE.weather_observation""")
@@ -24,7 +24,7 @@ def weather_data(controller: StgControler) -> None:
         # print(a.year, a.month, a.day)
         # month = datetime.datetime(year=a.year, month=a.month, day=a.day)
         month = datetime.datetime(year=2018, month=1, day=1)
-        month_end = month + datetime.timedelta(weeks=2)
+        month_end = month + datetime.timedelta(days=4+lag)
 
         query = f"""
         SELECT DISTINCT indx_nr, incident_date, incident_time, weather_station
@@ -36,14 +36,16 @@ def weather_data(controller: StgControler) -> None:
         ORDER BY incident_date ASC"""
         cursor.execute(query)
         records = cursor.fetchall()
-        print(len(records))
+        print(1, len(records))
         min_date = min([x[1] for x in records])
         max_date = max([x[1] for x in records])
         stations = [x[3] for x in records]
 
         for i in range(len(records) // 25):
-            print(len(stations))
-            controller.receive_weatherstation_data(station_id=','.join(stations[:25]),
+            print(2, len(stations))
+            print(3, len(set(stations)))
+
+            controller.receive_weatherstation_data(station_id=','.join(list(set(stations[:25]))),
                                                    start_datetime=min_date - datetime.timedelta(hours=1),
                                                    end_datetime=max_date + datetime.timedelta(hours=1))
             controller.load_weatherstation_data(table_name="weather_observation", rows=records[:25])
@@ -119,9 +121,11 @@ with DAG(
 
 for i in range(10):
     try:
+        print("START")
         dds_uploads.upload_weather_observation(table_name='weather_observation')
-        weather_data(controller=stg_loadings)
+        weather_data(controller=stg_loadings, lag=i)
     except Exception as e:
         print(e)
+        raise
 
 # [task_animal_incidents, task_weather_data, top_airports]

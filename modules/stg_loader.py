@@ -236,20 +236,20 @@ class StgControler:
                 print(df)
                 unloaded_rows = []
                 for record in rows:
+                    query = f"""
+                        INSERT INTO {self.schema}.{table_name} ({columns}) VALUES 
+                        """
+                    print(len)
                     for row in df.itertuples():
-                        query = f"""
-                                    INSERT INTO {self.schema}.{table_name} ({columns}) VALUES
-                                    ('{row.STATION}', '{record[0]}', '{row.DATE}', '{row.WND}',
-                                        '{row.CIG}', '{row.VIS}', '{row.TMP}', '{row.DEW}', 
-                                        '{row.SLP}'
-                                        );"""
-                        try:
-                            cursor.execute(query)
-                            self.logger.info('Row inserted')
-                            print('Row inserted')
-                        except Exception as e:
-                            self.logger.error(e)
-                            unloaded_rows.append(row)
+                        query += f"""('{row.STATION}', '{record[0]}', '{row.DATE}', '{row.WND}', '{row.CIG}', '{row.VIS}', '{row.TMP}', '{row.DEW}', '{row.SLP}'),"""
+                    print(query)
+                    try:
+                        cursor.execute(query[:-1]+';')
+                        self.logger.info('Row inserted')
+                        print('Row inserted')
+                    except Exception as e:
+                        self.logger.error(e)
+                        unloaded_rows.append(row)
                     connect.commit()
                 self.downloaded_files_list.remove(file)
                 if len(unloaded_rows) == 0:

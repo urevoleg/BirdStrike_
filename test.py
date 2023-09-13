@@ -8,10 +8,14 @@ print(a[['station', 'BEGIN', 'END', 'LAT', 'LON']])
 
 
 """
-INSERT INTO DDS.weather_observation
-()
+SELECT count(*) FROM (
+SELECT incident FROM dds.weather_observation GROUP BY incident HAVING COUNT(incident) > 0)a;
 
 
 
+
+"""
+
+"""
 
 """
