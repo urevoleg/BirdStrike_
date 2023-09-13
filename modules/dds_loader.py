@@ -15,54 +15,133 @@ class DdsControler:
     def upload_aircraft_incidents(self, table_name: str) -> None:
         with self.pg_connect.connection() as connect:
             cursor = connect.cursor()
-            cursor.execute(f"""
+            query = f"""
             INSERT INTO {self.schema}.{table_name}
-               (indx_nr, INCIDENT_DATE, LATITUDE, LONGITUDE, AIRPORT_ID, AIRPORT, SPECIES)
+               (indx_nr, incident_date, inc_coordinates, airport_id, airport, species, INCIDENT_time)
                SELECT
-                   DISTINCT indx_nr, -- DISTINCT на всякий случай, но похорошему надо обсуждать                      
+                   indx_nr,                   
                    INCIDENT_DATE::date,
-                   LATITUDE::DOUBLE PRECISION, 
-                   LONGITUDE::DOUBLE PRECISION,
+                   inc_coordinates::point,
                    AIRPORT_ID,
                    AIRPORT,
-                   SPECIES
+                   SPECIES,
+                   REPLACE(TRIM(time), '%', '0')
                FROM STAGE.aircraft_incidents
-               WHERE indx_nr not in (SELECT indx_nr FROM DDS.aircraft_incidents) -- дополнительная фильтрация, по хорошему данные уже были отфильтрованы при обработке pandas
-               ;
-            """)
+               WHERE indx_nr not in (SELECT indx_nr FROM DDS.aircraft_incidents)
+               ON CONFLICT DO NOTHING;
+            """
+            cursor.execute(query)
             connect.commit()
+        self.logger.info(f"Aircraft incidents reference updated")
 
-    def upload_weather_observation(self, table_name: str, date: str) -> None:
+    def upload_weather_reference(self, table_name: str) -> None:
         with self.pg_connect.connection() as connect:
             connect.autocommit = False
             cursor = connect.cursor()
-            chosen_week = datetime.strptime(date, '%Y-%m-%d').date().strftime("%V")
-            chosen_year = datetime.strptime(date, '%Y-%m-%d').year
+            query = f"""
+            INSERT INTO {self.schema}.{table_name}
+            (station, start_date, end_date, geo_data)
+            SELECT
+                station,
+                cast(start_date as varchar)::date as start_date,
+                cast(end_date as varchar)::date as end_date,
+                geo_data
+                FROM STAGE.observation_reference
+            ON CONFLICT ON CONSTRAINT observation_reference_pkey DO UPDATE SET end_date = EXCLUDED.end_date;
+            """
+            cursor.execute(query)
+            connect.commit()
+        self.logger.info(f"Observation reference updated")
+
+    def update_incident_station_link(self, table_name: str):
+        with self.pg_connect.connection() as connect:
+            connect.autocommit = False
+            cursor = connect.cursor()
+            query = f"""
+            INSERT INTO {self.schema}.{table_name}
+            (index_incedent, weather_station)
+            WITH incident as (
+                SELECT
+                    indx_nr,
+                    incident_date, 
+                    inc_coordinates,
+                    airport_id, 
+                    airport, 
+                    species 
+                FROM DDS.aircraft_incidents incidents
+                WHERE indx_nr not in (SELECT index_incedent FROM DDS.incident_station_link)),
+            stations as (
+                SELECT
+                    station, geo_data, start_date, end_date
+                FROM DDS.observation_reference),
+            calculation as (
+                SELECT 
+                       indx_nr, stations.station,
+                       (inc_coordinates::point<->geo_data::point)*1.609 as kilometers,
+                       ROW_NUMBER () 
+                        OVER (
+                            PARTITION BY indx_nr
+                               ORDER BY (inc_coordinates::point<->geo_data::point)*1.609 ASC
+                            ) as row_number
+                FROM stations
+                CROSS JOIN incident
+                WHERE incident_date::date between start_date and end_date
+                )
+            SELECT
+                indx_nr,
+                station
+            FROM calculation
+            WHERE row_number = 1;
+            """
+            cursor.execute(query)
+            connect.commit()
+        self.logger.info(f"Table with links between stations and incidents updated")
+
+    def upload_weather_observation(self, table_name: str) -> None:
+        """Под вопросом"""
+        with self.pg_connect.connection() as connect:
+            connect.autocommit = False
+            cursor = connect.cursor()
             query = f"""
                    INSERT INTO {self.schema}.{table_name}
-                   (STATION, DATE, LATITUDE, LONGITUDE, ELEVATION, NAME, TEMP,
-                   TEMP_ATTRIBUTES, DEWP, DEWP_ATTRIBUTES, SLP, SLP_ATTRIBUTES, STP, STP_ATTRIBUTES,
-                   VISIB, VISIB_ATTRIBUTES, WDSP, WDSP_ATTRIBUTES, MXSPD, GUST, MAX, MAX_ATTRIBUTES,
-                   MIN, MIN_ATTRIBUTES, PRCP, PRCP_ATTRIBUTES, SNDP, FRSHTT)
+                   (STATION, incident, DATE, WND, CIG, VIS, TMP, DEW, SLP)
         
-                   SELECT
-                               DISTINCT STATION, 
-                               DATE::date,
-                               LATITUDE::DOUBLE PRECISION,
-                               LONGITUDE::DOUBLE PRECISION,
-                               ELEVATION, NAME, TEMP,
-                           TEMP_ATTRIBUTES, DEWP, DEWP_ATTRIBUTES, SLP, SLP_ATTRIBUTES, STP, STP_ATTRIBUTES,
-                           VISIB, VISIB_ATTRIBUTES, WDSP, WDSP_ATTRIBUTES, MXSPD, GUST, MAX, MAX_ATTRIBUTES,
-                           MIN, MIN_ATTRIBUTES, PRCP, PRCP_ATTRIBUTES, SNDP, FRSHTT
-                           FROM STAGE.weather_observation
-                           WHERE 1=1 
-                                and EXTRACT('Year' FROM DATE::date) = {chosen_year} -- год совпадает с годом выборки
-                                and STATION NOT IN ( 
-                                                    SELECT STATION FROM DDS.weather_observation
-                                                    WHERE 1=1 
-                                                    and DATE_PART('week', DATE::date) = {chosen_week}
-                                                    and EXTRACT('Year' FROM DATE::date) = {chosen_year}
-                                                    ); -- id станции нет среди всех id за выбранный год и за выбранную неделю
+                   WITH CTE as (SELECT
+                    station,
+                    incident, 
+                    cast(date as timestamp) as date,
+                    cast(concat(concat(cast(INCIDENT_DATE as varchar), ' '),cast(INCIDENT_time as varchar)) as timestamp) as inc_ddtm,
+                    weather.WND, 
+                    weather.CIG, 
+                    weather.VIS, 
+                    weather.TMP, 
+                    weather.DEW, 
+                    weather.SLP 
+                FROM STAGE.weather_observation weather
+                INNER JOIN DDS.aircraft_incidents inc
+                ON inc.indx_nr=weather.incident
+                WHERE incident NOT IN (SELECT incident FROM {self.schema}.{table_name})
+                ),
+                calc as (
+                SELECT *, date-inc_ddtm as diff
+                FROM CTE),
+                pre as (
+                SELECT *, @EXTRACT(EPOCH FROM diff) as seconds
+                FROM calc),
+                result as (
+                SELECT *, --station, incident, inc_ddtm, WND, CIG, VIS, TMP, DEW, SLP,
+                ROW_NUMBER () 
+                                        OVER (
+                                            PARTITION BY incident
+                                               ORDER BY seconds
+                                            ) as row_number,
+                                            seconds
+                FROM pre)
+                SELECT station, incident, inc_ddtm, WND, CIG, VIS, TMP, DEW, SLP
+                FROM result
+                WHERE row_number=1
+                ;
                                                     """
             cursor.execute(query)
             connect.commit()
+

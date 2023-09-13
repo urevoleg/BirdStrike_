@@ -19,8 +19,11 @@ PET project. Database about aircraft birdstrike incidents
 На текущем этапе разработки проект запускается локально с использованием базы данных в docker  
 Файл docker-compose.yaml с помощью команды docker-compose up -d создает докер-контейнер с СУБД POSTGRESQL  
 Проверить работостособность базы данных можно внутри контейнера с помощью команды:
-docker exec -it birdstrike_database_1 psql -U docker_app -d docker_app_db
+docker exec -it birdstrike_database_1 psql -U airflow -d airflow
 Далее можно вводить sql команды через командну строку
+
+docker exec -it birdstrike-database-1 bash -U airflow -d airflow
+pg_dump -U airflow -d airflow -t DDS.DDS.weather_observation > 1.sql
 
 
 Этапы выполнения кода
@@ -208,6 +211,9 @@ PET project. Database about birdstrike aircraft incidents
 
 Данные по станциям
 https://www.ncei.noaa.gov/access/search/data-search/global-summary-of-the-day?startDate=2018-01-01T00:00:00&endDate=2018-01-31T23:59:59&pageNum=1&stations=99999963826
+
+
+скорость и направление ветра, состояние неба, видимость, температура воздуха, температура точки росы, атмосферное давление. 
 
 
 TEMP - Mean temperature (.1 Fahrenheit)

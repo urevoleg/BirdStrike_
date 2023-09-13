@@ -33,7 +33,15 @@ with DAG(
         task_id='download_animal_incidents',
         python_callable=dds_uploads.upload_aircraft_incidents,
         op_kwargs={'table_name': 'aircraft_incidents'})
-    task_weather_data = PythonOperator(
-        task_id='download_weather_data',
-        python_callable=dds_uploads.upload_weather_observation,
-        op_kwargs={'table_name': 'weather_observation'})
+    # task_weather_data = PythonOperator(
+    #     task_id='download_weather_data',
+    #     python_callable=dds_uploads.upload_weather_observation,
+    #     op_kwargs={'table_name': 'weather_observation'})
+
+# инкрементальный захват инцидентов из стейджа
+dds_uploads.upload_aircraft_incidents(table_name='aircraft_incidents')
+# инкрементальный захват изменений в станциях (обновление справочника со станциями)
+dds_uploads.upload_weather_reference(table_name='observation_reference')
+# обновление DDS.incident_station_link
+dds_uploads.update_incident_station_link(table_name='incident_station_link')  # Долгий запрос так как используется cross_join
+dds_uploads.upload_weather_observation(table_name='weather_observation')

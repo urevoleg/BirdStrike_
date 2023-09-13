@@ -14,19 +14,29 @@ def years_extractor(start_date: str,
     return sorted(years)
 
 
-def get_stations(db_connection):
+def get_stations(db_connection, schema, table_name, year) -> list:
     with db_connection.connection() as connect:
         cursor = connect.cursor()
-        query = f"""SELECT id FROM DDS.observation_station ;"""
+        query = f"""SELECT DISTINCT station FROM {schema}.{table_name} 
+                    WHERE to_date('{year}', 'YYYY') between start_date and end_date;"""
         cursor.execute(query)
         stations = cursor.fetchall()
         return [x[0] for x in stations]
 
+def get_incidents_stations(db_connection, schema, table_name, year):
+    with db_connection.connection() as connect:
+        cursor = connect.cursor() #
+        query = f"""SELECT DISTINCT weather_station FROM {schema}.{table_name}
+                       JOIN  DDS.aircraft_incidents ON incident_station_link.index_incedent= aircraft_incidents.indx_nr
+                       WHERE EXTRACT('YEAR' FROM incident_date) = '{year}';"""
+        cursor.execute(query)
+        stations = cursor.fetchall()
+        return [x[0] for x in stations]
 
-def get_unfield_stations(db_connection, year):
+def get_field_stations(db_connection, schema, table_name, year):
     with db_connection.connection() as connect:
         cursor = connect.cursor()
-        query = f"""SELECT DISTINCT station FROM DDS.weather_observation 
+        query = f"""SELECT DISTINCT station FROM {schema}.{table_name} 
                     WHERE extract('Year' FROM date)={int(year)}
                             ;"""
         cursor.execute(query)
