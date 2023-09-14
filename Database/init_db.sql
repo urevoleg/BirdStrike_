@@ -72,7 +72,8 @@ CREATE TABLE IF NOT EXISTS DDS.incident_station_link --таблица с инц�
 CREATE TABLE IF NOT EXISTS DDS.weather_observation -- таблица с обработанными данными о погоде
     (STATION varchar(40),
     incident varchar(40),
-    DATE timestamp,
+    weather_DATE timestamp,
+    inc_date timestamp,
     WND varchar(40),
     CIG varchar(40),
     VIS varchar(40),

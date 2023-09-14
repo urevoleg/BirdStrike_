@@ -224,33 +224,29 @@ class StgControler:
             self.logger.info(f"file {current_file} moved to {os.getcwd()}/Downloads")
             self.downloaded_files_list.append(current_file)
 
-    def load_weatherstation_data(self, table_name, rows):
+    def load_weatherstation_data(self, table_name):
         "ПОКА под вопросом"
         with self.pg_connect.connection() as connect:
             connect.autocommit = False
             cursor = connect.cursor()
-            columns = "STATION, incident, DATE, WND, CIG, VIS, TMP, DEW, SLP"
+            columns = "STATION, DATE, WND, CIG, VIS, TMP, DEW, SLP"
             for file in self.downloaded_files_list:
                 df = pd.read_csv(f"{os.getcwd()}/Downloads/{file}")
                 print(f"Подготовлен Dataframe c {df.shape[0]} записями")
-                print(df)
                 unloaded_rows = []
-                for record in rows:
-                    query = f"""
+                query = f"""
                         INSERT INTO {self.schema}.{table_name} ({columns}) VALUES 
                         """
-                    print(len)
-                    for row in df.itertuples():
-                        query += f"""('{row.STATION}', '{record[0]}', '{row.DATE}', '{row.WND}', '{row.CIG}', '{row.VIS}', '{row.TMP}', '{row.DEW}', '{row.SLP}'),"""
-                    print(query)
-                    try:
-                        cursor.execute(query[:-1]+';')
-                        self.logger.info('Row inserted')
-                        print('Row inserted')
-                    except Exception as e:
-                        self.logger.error(e)
-                        unloaded_rows.append(row)
-                    connect.commit()
+                for row in df.itertuples():
+                    query += f"""('{row.STATION}', '{row.DATE}', '{row.WND}', '{row.CIG}', '{row.VIS}', '{row.TMP}', 
+                    '{row.DEW}', '{row.SLP}'),"""
+                try:
+                    cursor.execute(query[:-1]+';')
+                except Exception as e:
+                    self.logger.error(e)
+                    unloaded_rows.append(row)
+                connect.commit()
+                self.logger.info(f"Another butch with {df.shape[0]} rows downloaded")
                 self.downloaded_files_list.remove(file)
                 if len(unloaded_rows) == 0:
                     os.remove(f"{os.getcwd()}/Downloads/{file}")
@@ -282,7 +278,7 @@ class StgControler:
             options.add_argument('headless')
             driver = webdriver.Chrome(options=options)
             driver.get(URL)
-            for i in range(5):
+            for i in range(8):
                 try:
                     time.sleep(10)
                     current_file = [file for file in os.listdir(f"{os.getcwd()}") if file.endswith('csv')][0]

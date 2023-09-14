@@ -97,20 +97,20 @@ class DdsControler:
             connect.commit()
         self.logger.info(f"Table with links between stations and incidents updated")
 
-    def upload_weather_observation(self, table_name: str) -> None:
+    def upload_weather_observation(self, table_name: str, date) -> None:
         """Под вопросом"""
         with self.pg_connect.connection() as connect:
             connect.autocommit = False
             cursor = connect.cursor()
             query = f"""
                    INSERT INTO {self.schema}.{table_name}
-                   (STATION, incident, DATE, WND, CIG, VIS, TMP, DEW, SLP)
+                   (STATION, incident, weather_DATE, inc_date, WND, CIG, VIS, TMP, DEW, SLP)
         
                    WITH CTE as (SELECT
-                    station,
-                    incident, 
-                    cast(date as timestamp) as date,
+                    distinct station,
+                    cast(DATE as timestamp) as date,
                     cast(concat(concat(cast(INCIDENT_DATE as varchar), ' '),cast(INCIDENT_time as varchar)) as timestamp) as inc_ddtm,
+                    index_incedent,
                     weather.WND, 
                     weather.CIG, 
                     weather.VIS, 
@@ -118,9 +118,10 @@ class DdsControler:
                     weather.DEW, 
                     weather.SLP 
                 FROM STAGE.weather_observation weather
-                INNER JOIN DDS.aircraft_incidents inc
-                ON inc.indx_nr=weather.incident
-                WHERE incident NOT IN (SELECT incident FROM {self.schema}.{table_name})
+                INNER JOIN DDS.incident_station_link link ON weather.station = link.weather_station
+                INNER JOIN DDS.aircraft_incidents inc ON inc.indx_nr=link.index_incedent
+                WHERE index_incedent NOT IN (SELECT incident FROM {self.schema}.{table_name})
+                AND INCIDENT_DATE <= cast(date as timestamp)
                 ),
                 calc as (
                 SELECT *, date-inc_ddtm as diff
@@ -129,15 +130,15 @@ class DdsControler:
                 SELECT *, @EXTRACT(EPOCH FROM diff) as seconds
                 FROM calc),
                 result as (
-                SELECT *, --station, incident, inc_ddtm, WND, CIG, VIS, TMP, DEW, SLP,
+                SELECT *, --station, inc_ddtm, WND, CIG, VIS, TMP, DEW, SLP,
                 ROW_NUMBER () 
                                         OVER (
-                                            PARTITION BY incident
+                                            PARTITION BY station,index_incedent
                                                ORDER BY seconds
                                             ) as row_number,
                                             seconds
                 FROM pre)
-                SELECT DISTINCT station, incident, inc_ddtm, WND, CIG, VIS, TMP, DEW, SLP
+                SELECT DISTINCT station, index_incedent, date, inc_ddtm, WND, CIG, VIS, TMP, DEW, SLP
                 FROM result
                 WHERE row_number=1
                 ;
