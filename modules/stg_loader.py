@@ -233,32 +233,35 @@ class StgControler:
             for file in self.downloaded_files_list:
                 df = pd.read_csv(f"{os.getcwd()}/Downloads/{file}")
                 print(f"Подготовлен Dataframe c {df.shape[0]} записями")
-                unloaded_rows = []
-                query = f"""
-                        INSERT INTO {self.schema}.{table_name} ({columns}) VALUES 
-                        """
-                for row in df.itertuples():
-                    query += f"""('{row.STATION}', '{row.DATE}', '{row.WND}', '{row.CIG}', '{row.VIS}', '{row.TMP}', 
-                    '{row.DEW}', '{row.SLP}'),"""
-                try:
-                    cursor.execute(query[:-1]+';')
-                except Exception as e:
-                    self.logger.error(e)
-                    unloaded_rows.append(row)
-                connect.commit()
-                self.logger.info(f"Another butch with {df.shape[0]} rows downloaded")
-                self.downloaded_files_list.remove(file)
-                if len(unloaded_rows) == 0:
-                    os.remove(f"{os.getcwd()}/Downloads/{file}")
-                    self.logger.info(f"{os.getcwd()}/Downloads/{file} удален")
+                if df.shape[0] > 0:
+                    unloaded_rows = []
+                    query = f"""
+                            INSERT INTO {self.schema}.{table_name} ({columns}) VALUES 
+                            """
+                    for row in df.itertuples():
+                        query += f"""('{row.STATION}', '{row.DATE}', '{row.WND}', '{row.CIG}', '{row.VIS}', '{row.TMP}', 
+                        '{row.DEW}', '{row.SLP}'),"""
+                    try:
+                        cursor.execute(query[:-1]+';')
+                    except Exception as e:
+                        self.logger.error(e)
+                        unloaded_rows.append(row)
+                    connect.commit()
+                    self.logger.info(f"Another butch with {df.shape[0]} rows downloaded")
+                    self.downloaded_files_list.remove(file)
+                    if len(unloaded_rows) == 0:
+                        os.remove(f"{os.getcwd()}/Downloads/{file}")
+                        self.logger.info(f"{os.getcwd()}/Downloads/{file} удален")
+                    else:
+                        self.logger.info(
+                            f"{len(unloaded_rows)} записей не были загружены в таблицу {self.schema}.{table_name}:")
+                        for record in unloaded_rows:
+                            self.logger.warning(record)
+                        shutil.move(f"{os.getcwd()}/Downloads/{file}",
+                                    f"{os.getcwd()}/Unresolved/{file}")
+                    self.logger.info(f"Data is loaded")
                 else:
-                    self.logger.info(
-                        f"{len(unloaded_rows)} записей не были загружены в таблицу {self.schema}.{table_name}:")
-                    for record in unloaded_rows:
-                        self.logger.warning(record)
-                    shutil.move(f"{os.getcwd()}/Downloads/{file}",
-                                f"{os.getcwd()}/Unresolved/{file}")
-                self.logger.info(f"Data is loaded")
+                    self.logger.info(f"No Data for choosen stations")
 
     def receive_weatherstation_data(self,
                                     station_id: str,
@@ -278,9 +281,9 @@ class StgControler:
             options.add_argument('headless')
             driver = webdriver.Chrome(options=options)
             driver.get(URL)
-            for i in range(8):
+            for i in range(15):
                 try:
-                    time.sleep(10)
+                    time.sleep(15)
                     current_file = [file for file in os.listdir(f"{os.getcwd()}") if file.endswith('csv')][0]
                     break
                 except:

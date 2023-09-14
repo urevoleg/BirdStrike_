@@ -12,18 +12,21 @@ PET project. Database about aircraft birdstrike incidents
     Модуль connections.py с кодом создания клиентов для подключений 
     Модуль stg_loader содержит класс StgControler для создания объектов обработки данных при заполении stage.
     Модуль dds_loader содержит класс DdsControler для инкрементальной загрузки данных в DDS слой.
-    Модуль cdm_loader содержит класс CdmControler, создан на перспективу
-    Модуль instrumental содержит функции, которые пока что прямо не отнесены 
+    Модуль cdm_loader содержит класс CdmControler, для формирования витрин данных и выгрузки с csv
+    Модуль instrumental содержит функции, которые прямо не отнесены к какому-то слою, но помогают для обработки данных
 
 
 На текущем этапе разработки проект запускается локально с использованием базы данных в docker  
-Файл docker-compose.yaml с помощью команды docker-compose up -d создает докер-контейнер с СУБД POSTGRESQL  
+Файл docker-compose.yaml с помощью команды **docker-compose up -d** создает докер-контейнер с СУБД POSTGRESQL  
 Проверить работостособность базы данных можно внутри контейнера с помощью команды:
 docker exec -it birdstrike_database_1 psql -U airflow -d airflow
 Далее можно вводить sql команды через командну строку
 
-docker exec -it birdstrike-database-1 bash -U airflow -d airflow
-pg_dump -U airflow -d airflow -t DDS.DDS.weather_observation > 1.sql
+База данных уже наполнена резервными копиями таблиц DDS.weather_observation, DDS.aircraft_incidents, CDM.top_ten_airports
+
+pg_dump -U airflow -d airflow -t DDS.weather_observation > 1.sql
+pg_dump -U airflow -d airflow -t DDS.aircraft_incidents > 1.sql
+pg_dump -U airflow -d airflow -t DDS.aircraft_incidents > 1.sql
 
 
 Этапы выполнения кода

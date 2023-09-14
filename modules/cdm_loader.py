@@ -1,5 +1,11 @@
-from datetime import datetime
 from modules.connections import PgConnect
+import requests as req
+from selenium import webdriver
+import time
+import datetime
+from selenium.webdriver.common.by import By
+from modules.instrumentals import table_extractor
+
 
 class CdmControler:
     def __init__(self, date: datetime.date,
@@ -20,7 +26,6 @@ class CdmControler:
             options = webdriver.ChromeOptions()
             options.add_argument('headless')
             driver = webdriver.Chrome(options=options)  # Открытие страницы в фоновом режиме
-            # driver = webdriver.Chrome()
             driver.get(url)
             driver.set_window_size(1920, 1080)  # Без этой опции не подгружается кнопка submit в фоновом режиме
             time.sleep(5)
@@ -29,6 +34,7 @@ class CdmControler:
             with self.pg_connect.connection() as connect:
                 connect.autocommit = False
                 for record in airports_data:
+                    print(record)
                     airport_id = record[0]
                     airport_name = record[1]
                     bts_name = record[2]
@@ -50,7 +56,6 @@ class CdmControler:
                                                           'INTERNATIONAL': 'destination_international',
                                                           'TOTAL': 'destination_total'}, inplace=True)
                     result = origin_dataframe.merge(destination_dataframe, on=["Year", "Month"])
-                    print(f"Подготовлен Dataframe c {result.shape[0]} записями для {bts_name}")
                     self.logger.info(f"Подготовлен Dataframe c {result.shape[0]} записями для {bts_name}")
                     columns = ['airport_id', 'airport_name', 'Year', 'Month', 'origin_domestic', 'origin_international',
                                'origin_total', 'destination_domestic', 'destination_international', 'destination_total',

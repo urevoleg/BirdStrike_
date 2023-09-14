@@ -97,7 +97,7 @@ class DdsControler:
             connect.commit()
         self.logger.info(f"Table with links between stations and incidents updated")
 
-    def upload_weather_observation(self, table_name: str, date) -> None:
+    def upload_weather_observation(self, table_name: str) -> None:
         """Под вопросом"""
         with self.pg_connect.connection() as connect:
             connect.autocommit = False

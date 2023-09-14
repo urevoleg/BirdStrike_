@@ -83,7 +83,7 @@ CREATE TABLE IF NOT EXISTS DDS.weather_observation -- таблица с обра
     );
 
 
-CREATE TABLE IF NOT EXISTS STAGE.top_ten_airports
+CREATE TABLE IF NOT EXISTS CDM.top_ten_airports -- витрина с данными о ТОП-10 аэропортах по числу инцидентов на дату построения
 (id serial,
     airport_id varchar(40),
     airport_name varchar(200),
@@ -99,18 +99,11 @@ CREATE TABLE IF NOT EXISTS STAGE.top_ten_airports
     );
 
 
-
-
-CREATE TABLE IF NOT EXISTS DDS.observation_station
-    (id varchar(50) primary key,
-    GEO_POINT point);
-
-
-CREATE TABLE IF NOT EXISTS DDS.airport_bts_name
+CREATE TABLE IF NOT EXISTS DDS.airport_bts_name -- справочник с именами ажророртов согласно номенклатуре BTS
     (id varchar(50) primary key,
     bts_name varchar null);
 
-INSERT INTO DDS.airport_bts_name -- заполнение id всех наблюдательных станций
+INSERT INTO DDS.airport_bts_name -- заполнение некоторых аэропортов именами согласно номенклатуре BTS
 (id, bts_name)
 values
 ('KDEN', '- DENVER, CO: Denver international'),
@@ -124,17 +117,3 @@ values
 ('KCLT', '- CHARLOTTE, NC: Charlotte/Douglas International'),
 ('KSLC', '- Salt Lake City, UT: Salt Lake City International');
 
-
-CREATE TABLE IF NOT EXISTS STAGE.top_ten_airports
-(id serial primary key,
-    airport_id varchar(40),
-    airport_name varchar(200),
-    Year int,
-    month int,
-    origin_domestic float,
-    origin_international float,
-    origin_total float,
-    destination_domestic float,
-    destination_international float,
-    destination_total float
-    );
