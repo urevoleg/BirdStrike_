@@ -45,4 +45,4 @@ dds_uploads.upload_weather_reference(table_name='observation_reference')
 # обновление DDS.incident_station_link
 dds_uploads.update_incident_station_link(table_name='incident_station_link')  # Долгий запрос так как используется cross_join
 # обновление данных о погоде для станции прининительно к конкретному инциденту
-dds_uploads.upload_weather_observation(table_name='weather_observation')
+#dds_uploads.upload_weather_observation(table_name='weather_observation')

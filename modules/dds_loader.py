@@ -17,17 +17,93 @@ class DdsControler:
             cursor = connect.cursor()
             query = f"""
             INSERT INTO {self.schema}.{table_name}
-               (indx_nr, incident_date, inc_coordinates, airport_id, airport, species, INCIDENT_time)
+               (
+               INDX_NR, INCIDENT_DATE, INCIDENT_MONTH, INCIDENT_YEAR, TIME, TIME_OF_DAY, AIRPORT_ID, 
+               AIRPORT, inc_coordinates, LATITUDE, LONGITUDE, RUNWAY, STATE, FAAREGION, LOCATION, 
+               ENROUTE_STATE, OPID, OPERATOR, REG, FLT, AIRCRAFT, AMA, AMO, EMA, EMO, AC_CLASS, AC_MASS, 
+               TYPE_ENG, NUM_ENGS, ENG_1_POS, ENG_2_POS, ENG_3_POS, ENG_4_POS, PHASE_OF_FLIGHT, HEIGHT, 
+               SPEED, DISTANCE, SKY, PRECIPITATION, AOS, COST_REPAIRS, COST_OTHER, 
+               COST_REPAIRS_INFL_ADJ, COST_OTHER_INFL_ADJ, INGESTED_OTHER, INDICATED_DAMAGE, 
+               DAMAGE_LEVEL, STR_RAD, DAM_RAD, STR_WINDSHLD, DAM_WINDSHLD, STR_NOSE, DAM_NOSE, 
+               STR_ENG1, DAM_ENG1, ING_ENG1, STR_ENG2, DAM_ENG2, ING_ENG2, STR_ENG3, DAM_ENG3, ING_ENG3, 
+               STR_ENG4, DAM_ENG4, ING_ENG4, STR_PROP, DAM_PROP, STR_WING_ROT, DAM_WING_ROT, STR_FUSE, 
+               DAM_FUSE, STR_LG, DAM_LG, STR_TAIL, DAM_TAIL, STR_LGHTS, DAM_LGHTS, STR_OTHER, DAM_OTHER, 
+               OTHER_SPECIFY, EFFECT, EFFECT_OTHER, SPECIES_ID, SPECIES, OUT_OF_RANGE_SPECIES, 
+               REMARKS, REMAINS_COLLECTED, REMAINS_SENT, BIRD_BAND_NUMBER, WARNED, NUM_SEEN, NUM_STRUCK, 
+               SIZE, NR_INJURIES, NR_FATALITIES, COMMENTS, REPORTER_NAME, REPORTER_TITLE, SOURCE, PERSON, 
+               LUPDATE, IMAGE, TRANSFER
+               )
+               
                SELECT
-                   indx_nr,                   
-                   INCIDENT_DATE::date,
-                   inc_coordinates::point,
-                   AIRPORT_ID,
-                   AIRPORT,
-                   SPECIES,
-                   REPLACE(TRIM(time), '%', '0')
-               FROM STAGE.aircraft_incidents
-               WHERE indx_nr not in (SELECT indx_nr FROM DDS.aircraft_incidents)
+       cast (INDX_NR as int),
+       CAST (INCIDENT_DATE as date),
+       CAST (INCIDENT_MONTH as int),
+       CAST (INCIDENT_YEAR as int),
+       REPLACE(TRIM(time), '%', '0'),
+       TIME_OF_DAY, AIRPORT_ID,
+       AIRPORT,
+       inc_coordinates,
+       CAST(LATITUDE as float),
+       CAST(LONGITUDE as float),
+       RUNWAY, STATE, FAAREGION, LOCATION,
+       ENROUTE_STATE, OPID, OPERATOR, REG, FLT, AIRCRAFT, AMA, AMO, EMA, EMO, AC_CLASS, AC_MASS,
+       TYPE_ENG, NUM_ENGS, ENG_1_POS, ENG_2_POS, ENG_3_POS, ENG_4_POS, PHASE_OF_FLIGHT,
+       CASE WHEN HEIGHT = 'None' or HEIGHT = '' THEN NULL ELSE CAST(HEIGHT as float) END as HEIGHT,
+       CASE WHEN SPEED = 'None' or SPEED = '' THEN NULL ELSE CAST(SPEED as float) END as SPEED,
+       CASE WHEN DISTANCE = 'None' or DISTANCE = '' THEN NULL ELSE CAST(DISTANCE as float) END as DISTANCE,
+       SKY, PRECIPITATION,
+       CASE WHEN AOS = 'None' or AOS = '' THEN NULL ELSE CAST(AOS as float) END as AOS,
+       CASE WHEN COST_REPAIRS = 'None' or COST_REPAIRS = '' THEN NULL ELSE CAST(COST_REPAIRS as float) END as COST_REPAIRS,
+       CASE WHEN COST_OTHER = 'None' or COST_OTHER = '' THEN NULL ELSE CAST(COST_OTHER as float) END as COST_OTHER,
+       CASE WHEN COST_REPAIRS_INFL_ADJ = 'None' or COST_REPAIRS_INFL_ADJ = '' THEN NULL ELSE CAST(COST_REPAIRS_INFL_ADJ as float) END as COST_REPAIRS_INFL_ADJ,
+       CASE WHEN COST_OTHER_INFL_ADJ = 'None' or COST_OTHER_INFL_ADJ = '' THEN NULL ELSE CAST(COST_OTHER_INFL_ADJ as float) END as COST_OTHER_INFL_ADJ,
+       INGESTED_OTHER::bool,
+       INDICATED_DAMAGE::bool,
+       DAMAGE_LEVEL,
+       STR_RAD::bool,
+       DAM_RAD::bool,
+       STR_WINDSHLD::bool,
+       DAM_WINDSHLD::bool,
+       STR_NOSE::bool,
+       DAM_NOSE::bool,
+       STR_ENG1::bool,
+       DAM_ENG1::bool,
+       ING_ENG1::bool,
+       STR_ENG2::bool,
+       DAM_ENG2::bool,
+       ING_ENG2::bool,
+       STR_ENG3::bool,
+       DAM_ENG3::bool,
+       ING_ENG3::bool,
+       STR_ENG4::bool,
+       DAM_ENG4::bool,
+       ING_ENG4::bool,
+       STR_PROP::bool,
+       DAM_PROP::bool,
+       STR_WING_ROT::bool,
+       DAM_WING_ROT::bool,
+       STR_FUSE::bool,
+       DAM_FUSE::bool,
+       STR_LG::bool,
+       DAM_LG::bool,
+       STR_TAIL::bool,
+       DAM_TAIL::bool,
+       STR_LGHTS::bool,
+       DAM_LGHTS::bool,
+       STR_OTHER::bool,
+       DAM_OTHER::bool,
+   OTHER_SPECIFY, EFFECT, EFFECT_OTHER, SPECIES_ID, SPECIES,
+   CASE WHEN OUT_OF_RANGE_SPECIES = 'None' THEN NULL ELSE OUT_OF_RANGE_SPECIES::bool END as OUT_OF_RANGE_SPECIES,
+   REMARKS,
+   CASE WHEN REMAINS_COLLECTED = 'None' THEN NULL ELSE REMAINS_COLLECTED::bool END as REMAINS_COLLECTED,
+   CASE WHEN REMAINS_SENT = 'None' THEN NULL ELSE REMAINS_SENT::bool END as REMAINS_SENT,
+   BIRD_BAND_NUMBER, WARNED, NUM_SEEN, NUM_STRUCK,
+   SIZE, NR_INJURIES, NR_FATALITIES, COMMENTS, REPORTER_NAME, REPORTER_TITLE, SOURCE, PERSON,
+   LUPDATE::date,
+   IMAGE::bool,
+   TRANSFER::bool
+   FROM STAGE.aircraft_incidents
+   WHERE cast(indx_nr as int) not in (SELECT indx_nr FROM DDS.aircraft_incidents)
                ON CONFLICT DO NOTHING;
             """
             cursor.execute(query)
@@ -69,7 +145,7 @@ class DdsControler:
                     airport, 
                     species 
                 FROM DDS.aircraft_incidents incidents
-                WHERE indx_nr not in (SELECT incident FROM DDS.incident_station_link)),
+                WHERE indx_nr not in (SELECT index_incedent FROM DDS.incident_station_link)),
             stations as (
                 SELECT
                     station, geo_data, start_date, end_date
@@ -103,6 +179,7 @@ class DdsControler:
             connect.autocommit = False
             cursor = connect.cursor()
             query = f"""
+                   SET datestyle = dmy;
                    INSERT INTO {self.schema}.{table_name}
                    (STATION, incident, weather_DATE, inc_date, WND, CIG, VIS, TMP, DEW, SLP)
         

@@ -6,6 +6,7 @@ from modules.dds_loader import DdsControler
 from modules.stg_loader import StgControler
 from airflow import DAG
 from airflow.operators.python import PythonOperator
+
 config = Config()
 log = logging.getLogger(__name__)
 
@@ -29,7 +30,7 @@ def weather_data(controller: StgControler, month, month_end) -> None:
             ORDER BY incident_date ASC"""
         cursor.execute(query)
         records = cursor.fetchall()
-        log.info('Выборка записей', len(set(records)))
+        log.info(f'Выборка записей {len(set(records))}')
 
     # Обрабатываем небольшими партиями, API не принимает более 50 stations
     for i in range(len(records[:50])):
@@ -53,7 +54,6 @@ def animal_incidents_data(controller: StgControler,
     controller.receive_animal_incidents_data(start_date=start_date, end_date=end_date)
     controller.unzip_data()
     controller.download_incidents(table_name='aircraft_incidents')
-
 
 
 stg_loadings = StgControler(date=datetime.datetime.now().date(),
@@ -92,15 +92,22 @@ with DAG(
 
 # Обновление справочника со станциями #лучше выполнять ежедневно перед запуском других расчетов
 # stg_loadings.isd_history(table_name='observation_reference')
-# animal_incidents_data(controller=stg_loadings, end_date='2022-12-31')
+for i in range(30):
+    dds_uploads.upload_aircraft_incidents(table_name='aircraft_incidents')
+    dds_uploads.upload_weather_reference(table_name='observation_reference')
+    dds_uploads.update_incident_station_link(table_name='incident_station_link')
+    animal_incidents_data(controller=stg_loadings, #end_date='2022-12-31'
+                          )
 
+"""
 for i in range(30):
     try:
         print("START")
-        month = datetime.datetime(year=2019, month=11, day=11)+datetime.timedelta(weeks=i+1)
-        month_end = month + datetime.timedelta(weeks=i+3)
+        month = datetime.datetime(year=2018, month=1, day=1)+datetime.timedelta(weeks=i+i)
+        month_end = month + datetime.timedelta(weeks=i+i+4)
         dds_uploads.upload_weather_observation(table_name='weather_observation')
         weather_data(controller=stg_loadings, month_end=month_end, month=month)
     except Exception as e:
         print(e)
-
+        raise
+"""
