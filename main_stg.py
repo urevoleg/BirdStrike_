@@ -21,11 +21,11 @@ def weather_data(controller: StgControler, month, month_end) -> None:
         log.info(f"Total start = {month}")
         log.info(f"Total end = {month_end}")
         query = f"""
-            SELECT DISTINCT indx_nr, incident_date, incident_time, weather_station
+            SELECT DISTINCT indx_nr, incident_date, time, weather_station
             FROM DDS.aircraft_incidents
             INNER JOIN DDS.incident_station_link link ON aircraft_incidents.indx_nr=link.index_incedent
             WHERE incident_date between '{month}' and '{month_end}'
-            AND indx_nr not in (SELECT distinct incident
+            AND indx_nr not in (SELECT distinct cast(incident as int)
                                 FROM DDS.weather_observation)
             ORDER BY incident_date ASC"""
         cursor.execute(query)
@@ -99,15 +99,13 @@ for i in range(30):
     animal_incidents_data(controller=stg_loadings, #end_date='2022-12-31'
                           )
 
-"""
 for i in range(30):
     try:
         print("START")
-        month = datetime.datetime(year=2018, month=1, day=1)+datetime.timedelta(weeks=i+i)
+        month = datetime.datetime(year=2019, month=1, day=1)+datetime.timedelta(weeks=i+i)
         month_end = month + datetime.timedelta(weeks=i+i+4)
         dds_uploads.upload_weather_observation(table_name='weather_observation')
         weather_data(controller=stg_loadings, month_end=month_end, month=month)
     except Exception as e:
         print(e)
         raise
-"""

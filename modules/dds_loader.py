@@ -186,7 +186,7 @@ class DdsControler:
                    WITH CTE as (SELECT
                     distinct station,
                     cast(DATE as timestamp) as date,
-                    cast(concat(concat(cast(INCIDENT_DATE as varchar), ' '),cast(INCIDENT_time as varchar)) as timestamp) as inc_ddtm,
+                    cast(concat(concat(cast(INCIDENT_DATE as varchar), ' '),cast(time as varchar)) as timestamp) as inc_ddtm,
                     index_incedent,
                     weather.WND, 
                     weather.CIG, 
@@ -197,7 +197,7 @@ class DdsControler:
                 FROM STAGE.weather_observation weather
                 INNER JOIN DDS.incident_station_link link ON weather.station = link.weather_station
                 INNER JOIN DDS.aircraft_incidents inc ON inc.indx_nr=link.index_incedent
-                WHERE index_incedent NOT IN (SELECT incident FROM {self.schema}.{table_name})
+                WHERE index_incedent NOT IN (SELECT cast(incident as int) FROM {self.schema}.{table_name})
                 AND INCIDENT_DATE <= cast(date as timestamp)
                 ),
                 calc as (
