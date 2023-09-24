@@ -1,8 +1,7 @@
-# 11
 import os
 import logging
 import datetime
-from modules.config import Config
+from config import Config
 from modules.stg_loader import StgControler
 from modules.instrumentals import years_extractor, get_stations, get_unfield_stations
 from airflow import DAG
@@ -68,11 +67,10 @@ stg_loadings = StgControler(date=datetime.datetime.now().date(),
                             logger=log)
 
 with DAG(
-        dag_id="Stage_download",
+        dag_id="example_timetable_dag",
         start_date=datetime.datetime(2018, 1, 1),
         max_active_runs=1,
         schedule="5 4 * * 3",
-        tags=['Incidents research'],
         catchup=False,
         default_args={
             "retries": 1,
@@ -91,7 +89,7 @@ with DAG(
                    'start_date': '2022-01-01',
                    'end_date': '2022-12-31'})
     top_airports = PythonOperator(
-        task_id='top_airports',
+        task_id='download_weather_data',
         python_callable=top_airports,
         op_kwargs={'controller': stg_loadings,
                    'process_date': datetime.datetime.now().date()})

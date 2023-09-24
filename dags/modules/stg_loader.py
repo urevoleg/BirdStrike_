@@ -2,14 +2,15 @@ import os
 import shutil
 import time
 import zipfile
+from selenium import webdriver
 import requests as req
 from datetime import datetime
 from selenium.webdriver.common.by import By
 import pandas as pd
-from .instrumentals import clean_directory, table_extractor
-from .connections import PgConnect
-from selenium import webdriver
-from webdriver_manager.chrome import ChromeDriverManager
+
+
+from modules.instrumentals import clean_directory, table_extractor
+from modules.connections import PgConnect
 
 
 class StgControler:
@@ -170,7 +171,6 @@ class StgControler:
             options = webdriver.ChromeOptions()
             options.add_argument('headless')
             driver = webdriver.Chrome(options=options)  # Открытие страницы в фоновом режиме
-            # driver = webdriver.Chrome(ChromeDriverManager().install())
             # driver = webdriver.Chrome()
             driver.get(url)
             driver.find_element(By.CSS_SELECTOR,
@@ -206,18 +206,14 @@ class StgControler:
 
     def top_airports_traffic(self, table_name, airports_data: list, process_date: datetime.date):
         url = "https://www.transtats.bts.gov/Data_Elements.aspx"
-        response = req.get(url, verify=False)
+        response = req.get(url)
         if response.status_code == 200:
             print(f"Страница доступна")
             self.logger.info(f"Страница доступна")
-            from selenium import webdriver
-            from selenium.webdriver.chrome.service import Service as ChromeService
-            service = ChromeService(executable_path='/usr/local/bin/chromedriver', service_log_path='/opt/airflow/logs')
             options = webdriver.ChromeOptions()
             options.add_argument('headless')
-            driver = webdriver.Chrome(service=service, options=options,)
-
-            # driver = webdriver.Chrome()
+            driver = webdriver.Chrome(options=options)  # Открытие страницы в фоновом режиме
+            #driver = webdriver.Chrome()
             driver.get(url)
             driver.set_window_size(1920, 1080)  # Без этой опции не подгружается кнопка submit в фоновом режиме
             time.sleep(5)

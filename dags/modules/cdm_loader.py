@@ -1,5 +1,5 @@
 from datetime import datetime
-from .connections import PgConnect
+from modules.connections import PgConnect
 
 class CdmControler:
     def __init__(self, date: datetime.date,

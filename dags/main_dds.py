@@ -1,6 +1,7 @@
+import os
 import logging
 import datetime
-from modules.config import Config
+from config import Config
 from modules.dds_loader import DdsControler
 from modules.cdm_loader import CdmControler
 from airflow import DAG
@@ -19,11 +20,10 @@ cdm_uploads = CdmControler(date=datetime.datetime.now().date(),
                            logger=log)
 
 with DAG(
-        dag_id="DDS_upload",
+        dag_id="example_timetable_dag",
         start_date=datetime.datetime(2018, 1, 1),
         max_active_runs=1,
         schedule="5 4 * * 3",
-        tags=['Incidents research'],
         catchup=False,
         default_args={
             "retries": 1,
@@ -36,5 +36,4 @@ with DAG(
     task_weather_data = PythonOperator(
         task_id='download_weather_data',
         python_callable=dds_uploads.upload_weather_observation,
-        op_kwargs={'table_name': 'weather_observation',
-                   'date': "2022-12-31"})
+        op_kwargs={'table_name': 'weather_observation'})
