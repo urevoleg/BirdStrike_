@@ -5,10 +5,10 @@ class Config:
 
     def __init__(self) -> None:
         self.pg_warehouse_host = 'localhost' #os.environ.get("HOST")
-        self.pg_warehouse_port = 6432 #5432
-        self.pg_warehouse_dbname = "docker_app_db"
-        self.pg_warehouse_user = "docker_app"
-        self.pg_warehouse_password = "docker_app"
+        self.pg_warehouse_port = 5432 #
+        self.pg_warehouse_dbname = "airflow"
+        self.pg_warehouse_user = "airflow"
+        self.pg_warehouse_password = "airflow"
         # port=os.environ.get("PORT"),
         # database=os.environ.get("DB"),
         # user=os.environ.get("DB_USERNAME"),

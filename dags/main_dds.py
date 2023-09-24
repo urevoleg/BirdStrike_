@@ -1,7 +1,7 @@
 import os
 import logging
 import datetime
-from config import Config
+from modules.config import Config
 from modules.dds_loader import DdsControler
 from modules.cdm_loader import CdmControler
 from airflow import DAG
