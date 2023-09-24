@@ -38,47 +38,48 @@ class StgControler:
         [clean_directory(full_path=f"{os.getcwd()}/{file}") for file in os.listdir(f"{os.getcwd()}") if
          file.startswith('isd')]
         if response.status_code == 200:
+            remote_webdriver = 'remote_chromedriver'
             options = webdriver.ChromeOptions()
             options.add_argument('headless')
-            driver = webdriver.Chrome(options=options)
-            driver.get(download_url)
-            time.sleep(20)  # большой файл, нужно время на загрузку
-            isd_file = [file for file in os.listdir(f"{os.getcwd()}") if file.startswith('isd-history.')][0]
-            df = pd.read_csv(filepath_or_buffer=isd_file, engine='python', encoding='utf-8', on_bad_lines='warn')
-            df['station'] = df['USAF'].astype(str) + df["WBAN"].astype(str)
-            result_df = df.query(f"`END` >= {begining_date.replace('-', '')}").query("`CTRY` == 'US'")
-            result_df = result_df[['station', 'BEGIN', 'END', 'LAT', 'LON']]
-            result_df.rename(columns={'BEGIN': 'start_date', 'END': 'end_date'}, inplace=True)
-            columns = ['station', 'start_date', 'end_date', 'GEO_DATA']
-            self.logger.info(f'Dataframe has {result_df.shape[0]} rows')
-            if not result_df.shape[0] > 0:
-                self.logger.info(f'Dataframe is empty')
-            else:
-                with self.pg_connect.connection() as connect:
-                    connect.autocommit = False
-                    cursor = connect.cursor()
-                    cursor.execute(f"TRUNCATE TABLE {self.schema}.{table_name};")
-                    for row in result_df.itertuples():
-                        try:
-                            query = f"""
-                                    INSERT INTO {self.schema}.{table_name} ({','.join(columns)})
-                                    with cte as(
-                                    SELECT
-                                    '{row.station}' as station, 
-                                    {int(row.start_date)} as start_date,
-                                    {int(row.end_date)} as end_date,
-                                    point({row.LAT}, {row.LON}) as GEO_DATA
-                                    )
-                                    SELECT station, start_date, end_date, GEO_DATA
-                                    FROM cte;"""
-                            cursor.execute(query)
+            with webdriver.Remote(f'{remote_webdriver}:4444/wd/hub', options=options) as driver:
+                driver.get(download_url)
+                time.sleep(20)  # большой файл, нужно время на загрузку
+                isd_file = [file for file in os.listdir(f"{os.getcwd()}") if file.startswith('isd-history.')][0]
+                df = pd.read_csv(filepath_or_buffer=isd_file, engine='python', encoding='utf-8', on_bad_lines='warn')
+                df['station'] = df['USAF'].astype(str) + df["WBAN"].astype(str)
+                result_df = df.query(f"`END` >= {begining_date.replace('-', '')}").query("`CTRY` == 'US'")
+                result_df = result_df[['station', 'BEGIN', 'END', 'LAT', 'LON']]
+                result_df.rename(columns={'BEGIN': 'start_date', 'END': 'end_date'}, inplace=True)
+                columns = ['station', 'start_date', 'end_date', 'GEO_DATA']
+                self.logger.info(f'Dataframe has {result_df.shape[0]} rows')
+                if not result_df.shape[0] > 0:
+                    self.logger.info(f'Dataframe is empty')
+                else:
+                    with self.pg_connect.connection() as connect:
+                        connect.autocommit = False
+                        cursor = connect.cursor()
+                        cursor.execute(f"TRUNCATE TABLE {self.schema}.{table_name};")
+                        for row in result_df.itertuples():
+                            try:
+                                query = f"""
+                                        INSERT INTO {self.schema}.{table_name} ({','.join(columns)})
+                                        with cte as(
+                                        SELECT
+                                        '{row.station}' as station, 
+                                        {int(row.start_date)} as start_date,
+                                        {int(row.end_date)} as end_date,
+                                        point({row.LAT}, {row.LON}) as GEO_DATA
+                                        )
+                                        SELECT station, start_date, end_date, GEO_DATA
+                                        FROM cte;"""
+                                cursor.execute(query)
 
-                        except Exception as e:
-                            self.logger.error(e)
-                            self.logger.info(row)
-                            pass
-                    connect.commit()
-                self.logger.info(f'Data loaded to {self.schema}.{table_name}')
+                            except Exception as e:
+                                self.logger.error(e)
+                                self.logger.info(row)
+                                pass
+                        connect.commit()
+                    self.logger.info(f'Data loaded to {self.schema}.{table_name}')
             clean_directory(full_path=f"{os.getcwd()}/{isd_file}")
 
     def unzip_data(self) -> None:
@@ -323,44 +324,46 @@ class StgControler:
             if response.status_code == 200:
                 options = webdriver.ChromeOptions()
                 options.add_argument('headless')
-                driver = webdriver.Chrome(options=options)  # Открытие страницы в фоновом режиме
-                driver.get(url)
-                driver.find_element(By.CSS_SELECTOR,
-                                    '#body > app-home > div > mat-card > mat-card-content > div > div > div.row > '
-                                    'div:nth-child(1) > a').click()
-                time.sleep(5)
-                driver.find_element(By.NAME, 'fromDate').send_keys(start_date)
-                driver.find_element(By.NAME, 'toDate').send_keys(end_date)
-                driver.find_element(By.XPATH,
-                                    '//*[@id="body"]/app-search/div[1]/mat-card/mat-card-content/div/div[1]/div[2]/div['
-                                    '2]/div[2]/span[1]/button[1]/span[2]').click()
-                self.logger.info(f"Page {url} opened and filed, 10 seconds wait until data will be prepared")
-                time.sleep(10)
-                for i in range(1, 5):  # 5 попыток нажать на кнопку скачивания файла
-                    try:
-                        driver.find_element(By.CSS_SELECTOR,
-                                            '#body > app-search > div.content > mat-card > mat-card-content > div > '
-                                            'div.card.airport-information > div.card-body > '
-                                            'div.card-footer.remove-margin.row > div.col-md-6.text-right.float-right > '
-                                            'span:nth-child(2)').click()
-                        break
-                    except Exception:
-                        print(f"Attempt № {i} failed")
-                        self.logger.warning(f"Attempt № {i} failed")
-                time.sleep(days_difference.days / 2)  # Время для скачивания файла из расчета 0,5 секунды на загрузку 1 дня
-                for i in range(1, 5):
-                    try:
-                        current_file = [file for file in os.listdir(f"{os.getcwd()}") if file.endswith('.zip')][0]
-                        break
-                    except:
-                        self.logger.warning(f"File .zip not found")
-                        time.sleep(20)
-                        pass
-                # Зачищаем целевую папку
-                clean_directory(full_path=f"{os.getcwd()}/Downloads/{current_file}")
-                shutil.move(src=f"{os.getcwd()}/{current_file}", dst=f"{os.getcwd()}/Downloads", )
-                self.logger.info(f"file {current_file} moved to {os.getcwd()}/Downloads")
-                self.downloaded_files_list.append(current_file)
+                #driver = webdriver.Chrome(options=options)  # Открытие страницы в фоновом режиме
+                remote_webdriver = 'remote_chromedriver'
+                with webdriver.Remote(f'{remote_webdriver}:4444/wd/hub', options=options) as driver:
+                    driver.get(url)
+                    driver.find_element(By.CSS_SELECTOR,
+                                        '#body > app-home > div > mat-card > mat-card-content > div > div > div.row > '
+                                        'div:nth-child(1) > a').click()
+                    time.sleep(5)
+                    driver.find_element(By.NAME, 'fromDate').send_keys(start_date)
+                    driver.find_element(By.NAME, 'toDate').send_keys(end_date)
+                    driver.find_element(By.XPATH,
+                                        '//*[@id="body"]/app-search/div[1]/mat-card/mat-card-content/div/div[1]/div[2]/div['
+                                        '2]/div[2]/span[1]/button[1]/span[2]').click()
+                    self.logger.info(f"Page {url} opened and filed, 10 seconds wait until data will be prepared")
+                    time.sleep(10)
+                    for i in range(1, 5):  # 5 попыток нажать на кнопку скачивания файла
+                        try:
+                            driver.find_element(By.CSS_SELECTOR,
+                                                '#body > app-search > div.content > mat-card > mat-card-content > div > '
+                                                'div.card.airport-information > div.card-body > '
+                                                'div.card-footer.remove-margin.row > div.col-md-6.text-right.float-right > '
+                                                'span:nth-child(2)').click()
+                            break
+                        except Exception:
+                            print(f"Attempt № {i} failed")
+                            self.logger.warning(f"Attempt № {i} failed")
+                    time.sleep(days_difference.days / 2)  # Время для скачивания файла из расчета 0,5 секунды на загрузку 1 дня
+                    for i in range(1, 5):
+                        try:
+                            current_file = [file for file in os.listdir(f"{os.getcwd()}") if file.endswith('.zip')][0]
+                            break
+                        except:
+                            self.logger.warning(f"File .zip not found")
+                            time.sleep(20)
+                            pass
+                    # Зачищаем целевую папку
+                    clean_directory(full_path=f"{os.getcwd()}/Downloads/{current_file}")
+                    shutil.move(src=f"{os.getcwd()}/{current_file}", dst=f"{os.getcwd()}/Downloads", )
+                    self.logger.info(f"file {current_file} moved to {os.getcwd()}/Downloads")
+                    self.downloaded_files_list.append(current_file)
 
     def load_weatherstation_data(self, table_name):
         "ПОКА под вопросом"
@@ -419,18 +422,20 @@ class StgControler:
         if response.status_code == 200:
             options = webdriver.ChromeOptions()
             options.add_argument('headless')
-            driver = webdriver.Chrome(options=options)
-            driver.get(URL)
-            for i in range(15):
-                try:
-                    time.sleep(15)
-                    current_file = [file for file in os.listdir(f"{os.getcwd()}") if file.endswith('csv')][0]
-                    break
-                except:
-                    self.logger.warning(f"File .csv not found")
-                    pass
-            clean_directory(full_path=f"{os.getcwd()}/Downloads/{current_file}")  # Зачищает целевую папку файла
-            shutil.move(src=f"{os.getcwd()}/{current_file}", dst=f"{os.getcwd()}/Downloads/", )
-            time.sleep(10)
+            #driver = webdriver.Chrome(options=options)
+            remote_webdriver = 'remote_chromedriver'
+            with webdriver.Remote(f'{remote_webdriver}:4444/wd/hub', options=options) as driver:
+                driver.get(URL)
+                for i in range(15):
+                    try:
+                        time.sleep(15)
+                        current_file = [file for file in os.listdir(f"{os.getcwd()}") if file.endswith('csv')][0]
+                        break
+                    except:
+                        self.logger.warning(f"File .csv not found")
+                        pass
+                clean_directory(full_path=f"{os.getcwd()}/Downloads/{current_file}")  # Зачищает целевую папку файла
+                shutil.move(src=f"{os.getcwd()}/{current_file}", dst=f"{os.getcwd()}/Downloads/", )
+                time.sleep(10)
             self.logger.info(f"file {current_file} moved to {os.getcwd()}/Downloads")
             self.downloaded_files_list.append(current_file)
