@@ -42,7 +42,8 @@ class StgControler:
             options = webdriver.ChromeOptions()
             options.add_argument('headless')
             with webdriver.Remote(f'{remote_webdriver}:4444/wd/hub', options=options) as driver:
-                driver.get(download_url)
+                #driver.get(download_url)
+                os.system(f"curl -O {download_url}")
                 for i in range(1, 5):
                     try:
                         print(os.getcwd(),os.listdir(f"{os.getcwd()}"))

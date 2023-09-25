@@ -4,7 +4,7 @@ from modules.connections import PgConnect
 class Config:
 
     def __init__(self) -> None:
-        self.pg_warehouse_host = 'localhost' #os.environ.get("HOST")
+        self.pg_warehouse_host = 'birdstrike-database-1' #os.environ.get("HOST")
         self.pg_warehouse_port = 5432 #
         self.pg_warehouse_dbname = "airflow"
         self.pg_warehouse_user = "airflow"
