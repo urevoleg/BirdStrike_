@@ -348,8 +348,8 @@ class StgControler:
                                                 'span:nth-child(2)').click()
                             break
                         except Exception:
-                            print(f"Attempt № {i} failed")
                             self.logger.warning(f"Attempt № {i} failed")
+                            time.sleep(5)
                     time.sleep(days_difference.days / 2)  # Время для скачивания файла из расчета 0,5 секунды на загрузку 1 дня
                     for i in range(1, 5):
                         try:
