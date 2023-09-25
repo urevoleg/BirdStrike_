@@ -107,7 +107,7 @@ with DAG(
         op_kwargs={'table_name': 'weather_observation'})
     upload_weather_reference = PythonOperator(
         task_id='upload_weather_reference',
-        python_callable=dds_uploads.upload_weather_observation,
+        python_callable=dds_uploads.upload_weather_reference,
         op_kwargs={'table_name': 'observation_reference'})
     upload_incident_station_link = PythonOperator(
         task_id='upload_incident_station_link',

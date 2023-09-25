@@ -1,5 +1,5 @@
 from datetime import datetime
-from .connections import PgConnect
+from modules.connections import PgConnect
 
 
 class DdsControler:
@@ -33,7 +33,7 @@ class DdsControler:
                SIZE, NR_INJURIES, NR_FATALITIES, COMMENTS, REPORTER_NAME, REPORTER_TITLE, SOURCE, PERSON, 
                LUPDATE, IMAGE, TRANSFER
                )
-               
+
                SELECT
        cast (INDX_NR as int),
        CAST (INCIDENT_DATE as date),
@@ -182,7 +182,7 @@ class DdsControler:
                    SET datestyle = dmy;
                    INSERT INTO {self.schema}.{table_name}
                    (STATION, incident, weather_DATE, inc_date, WND, CIG, VIS, TMP, DEW, SLP)
-        
+
                    WITH CTE as (SELECT
                     distinct station,
                     cast(DATE as timestamp) as date,
@@ -222,4 +222,3 @@ class DdsControler:
                                                     """
             cursor.execute(query)
             connect.commit()
-
