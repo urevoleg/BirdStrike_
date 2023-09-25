@@ -1,8 +1,10 @@
 import os
 import logging
 import datetime
-from modules.config import Config
+from config import Config
 from modules.stg_loader import StgControler
+from modules.dds_loader import DdsControler
+from modules.cdm_loader import CdmControler
 from airflow import DAG
 from airflow.operators.python import PythonOperator
 
@@ -13,9 +15,7 @@ log = logging.getLogger(__name__)
 [os.mkdir(name) for name in ["Archives", "Downloads", "Unresolved"] if name not in os.listdir()]
 
 
-def weather_data(controller: StgControler,
-                 start_date: str,
-                 end_date: str) -> None:
+def weather_data(controller: StgControler, start_date, end_date) -> None:
     with controller.pg_connect.connection() as connection:
         cursor = connection.cursor()
         cursor.execute(f"""TRUNCATE TABLE STAGE.weather_observation""")
@@ -32,7 +32,6 @@ def weather_data(controller: StgControler,
         cursor.execute(query)
         records = cursor.fetchall()
         log.info(f'Выборка записей {len(set(records))}')
-
     # Обрабатываем небольшими партиями, API не принимает более 50 stations
     for i in range(len(records[:50])):
         min_date = min([x[1] for x in records[:50]])
@@ -60,10 +59,18 @@ stg_loadings = StgControler(date=datetime.datetime.now().date(),
                             pg_connect=config.pg_warehouse_db(),
                             schema='Stage',
                             logger=log)
+dds_uploads = DdsControler(date=datetime.datetime.now().date(),
+                           pg_connect=config.pg_warehouse_db(),
+                           schema='DDS',
+                           logger=log)
+cdm_loader = CdmControler(date=datetime.datetime.now().date(),
+                          pg_connect=config.pg_warehouse_db(),
+                          schema='CDM',
+                          logger=log)
 
 with DAG(
-        dag_id="Stage_upload",
-        tags=['Bird_strike', 'Stage'],
+        dag_id="FULL_DAG",
+        tags=['BirdStrike'],
         start_date=datetime.datetime(2018, 1, 1),
         max_active_runs=1,
         schedule="5 4 * * 3",
@@ -72,17 +79,39 @@ with DAG(
             "retries": 1,
             "retry_delay": datetime.timedelta(minutes=3)}
 ) as dag:
+    task_observation_reference = PythonOperator(
+        task_id='download_observation_reference',
+        python_callable=stg_loadings.isd_history,
+        op_kwargs={'table_name': 'observation_reference'
+                   })
+
     task_animal_incidents = PythonOperator(
         task_id='download_animal_incidents',
         python_callable=animal_incidents_data,
         op_kwargs={'controller': stg_loadings,
-                   'start_date': '2022-01-01',
-                   'end_date': '2022-12-31'})
+                   'start_date': '2018-01-01'
+                   })
     task_weather_data = PythonOperator(
         task_id='download_weather_data',
         python_callable=weather_data,
         op_kwargs={'controller': stg_loadings,
-                   'start_date': '2022-01-01',
-                   'end_date': '2022-12-31'})
+                   'start_date': datetime.datetime(year=2019, month=1, day=1),
+                   'end_date': datetime.datetime(year=2021, month=12, day=31)})
+    upload_animal_incidents = PythonOperator(
+        task_id='upload_animal_incidents',
+        python_callable=dds_uploads.upload_aircraft_incidents,
+        op_kwargs={'table_name': 'aircraft_incidents'})
+    upload_weather_data = PythonOperator(
+        task_id='upload_weather_data',
+        python_callable=dds_uploads.upload_weather_observation,
+        op_kwargs={'table_name': 'weather_observation'})
+    upload_weather_reference = PythonOperator(
+        task_id='upload_weather_reference',
+        python_callable=dds_uploads.upload_weather_observation,
+        op_kwargs={'table_name': 'observation_reference'})
+    upload_incident_station_link = PythonOperator(
+        task_id='upload_incident_station_link',
+        python_callable=dds_uploads.update_incident_station_link,
+        op_kwargs={'table_name': 'incident_station_link'})
 
-[task_animal_incidents, task_weather_data]
+task_observation_reference >> upload_weather_reference >> task_animal_incidents >> upload_incident_station_link >> task_weather_data >> upload_animal_incidents >> upload_weather_data

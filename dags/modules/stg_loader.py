@@ -43,8 +43,14 @@ class StgControler:
             options.add_argument('headless')
             with webdriver.Remote(f'{remote_webdriver}:4444/wd/hub', options=options) as driver:
                 driver.get(download_url)
-                time.sleep(20)  # большой файл, нужно время на загрузку
-                isd_file = [file for file in os.listdir(f"{os.getcwd()}") if file.startswith('isd-history.')][0]
+                for i in range(1, 5):
+                    try:
+                        print(os.getcwd(),os.listdir(f"{os.getcwd()}"))
+                        isd_file = [file for file in os.listdir(f"{os.getcwd()}") if file.startswith('isd-history.')][0]
+                        break
+                    except:
+                        self.logger.info(f"Attemp № {i} to find file isd-history failed")
+                        time.sleep(20)
                 df = pd.read_csv(filepath_or_buffer=isd_file, engine='python', encoding='utf-8', on_bad_lines='warn')
                 df['station'] = df['USAF'].astype(str) + df["WBAN"].astype(str)
                 result_df = df.query(f"`END` >= {begining_date.replace('-', '')}").query("`CTRY` == 'US'")
@@ -429,6 +435,7 @@ class StgControler:
                 for i in range(15):
                     try:
                         time.sleep(15)
+                        print(os.listdir(f"{os.getcwd()}"))
                         current_file = [file for file in os.listdir(f"{os.getcwd()}") if file.endswith('csv')][0]
                         break
                     except:
