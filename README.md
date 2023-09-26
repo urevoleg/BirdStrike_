@@ -1,6 +1,57 @@
 # BirdStrike
-<<<<<<< HEAD
-PET project. Database about aircraft birdstrike incidents 
+PET project. Pipeline for getting data about aircraft birdstrike incidents
+
+ОГЛАВЛЕНИЕ:
+1. Как пользоваться всем этим, если ты просто аналитик и у тебя не времени вникать в вот это вот все
+2. Структура проекта
+3. 
+
+
+
+
+
+
+
+Как пользоваться всем этим, если ты просто аналитик и у тебя не времени вникать в вот это вот все
+![img_3.png](img_3.png)
+
+Скачиваешь репозиторий себе, лучше с помощью IDE или VS Code
+Убеждаешься, что у тебя есть возможность запускать docker
+Заходишь в папку с файлом docker-compose.yaml через терминал или любой другой CLI
+Вводишь команду docker-compose up ~~молишься чтобы заработало~~
+Подключаешься к контейнеру с POSTGRESQL под профилем airflow, пароль airflow, база данных airflow
+host localhost, port 6432 через любимый dbeaver или, что душе угодно
+![img_1.png](img_1.png)
+Работаешь работу.
+
+Данные по инцидентам и данные о погоде во время инцидента на ближайщей станции наблюдения находятся в таблицах DDS.aircraft_incidents и DDS.weather_observation
+в базу автоматически загружены данные с 1 января 2018 по 31 декабря 2020 года в момент создания контейнера
+Для запуска обновления airflow в файле main нужно внести изменния в конфигурацию конкретной таски. А именно нужно изменить даты загрузок
+Для загрузки данных о погоде
+
+    task_weather_data = PythonOperator(
+        task_id='download_weather_data',
+        python_callable=stg_loadings.weather_data,
+        op_kwargs={'controller': stg_loadings,
+                   'start_date': datetime.datetime(year=2020, month=1, day=1), -- ТУТА!
+                   'end_date': datetime.datetime(year=2021, month=12, day=31)}) -- ТУТА!!
+
+Для загрузки данных об инцидентах можно ничего не менять. 
+Каждый запуск данные будут подгружаться за каждые 4 недели пока не достигнут текущего дня
+
+    task_animal_incidents = PythonOperator(
+        task_id='download_animal_incidents',
+        python_callable=stg_loadings.animal_incidents_data,
+        op_kwargs={'controller': stg_loadings,
+                   })
+
+Не понятно или не работает, пиши в телеге @YarRuss12
+
+
+
+
+
+
 
 
 Структура проекта
@@ -16,7 +67,6 @@ PET project. Database about aircraft birdstrike incidents
     Модуль instrumental содержит функции, которые пока что прямо не отнесены 
 
 
-На текущем этапе разработки проект запускается локально с использованием базы данных в docker  
 Файл docker-compose.yaml с помощью команды docker-compose up -d создает докер-контейнер с СУБД POSTGRESQL  
 Проверить работостособность базы данных можно внутри контейнера с помощью команды:
 docker exec -it birdstrike-database-1 psql -U airflow -d airflow

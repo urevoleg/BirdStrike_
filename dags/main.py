@@ -14,9 +14,11 @@ log = logging.getLogger(__name__)
 # Create working directories if they not exists
 [os.mkdir(name) for name in ["Archives", "Downloads", "Unresolved"] if name not in os.listdir()]
 # Clean up working directories
-[os.remove(file) for file in os.listdir(os.getcwd()) if (file.endswith('.csv'))]
-[os.remove(file) for file in os.listdir(f"{os.getcwd()}/Downloads") if (file.endswith('.csv'))]
-
+try:
+    [os.remove(file) for file in os.listdir(os.getcwd()) if (file.endswith('.csv'))]
+    [os.remove(file) for file in os.listdir(f"{os.getcwd()}/Downloads") if (file.endswith('.csv'))]
+except:
+    pass
 
 stg_loadings = StgController(date=datetime.datetime.now().date(),
                              pg_connect=config.pg_warehouse_db(),
@@ -57,8 +59,8 @@ with DAG(
         task_id='download_weather_data',
         python_callable=stg_loadings.weather_data,
         op_kwargs={'controller': stg_loadings,
-                   'start_date': datetime.datetime(year=2020, month=1, day=1),
-                   'end_date': datetime.datetime(year=2020, month=12, day=31)})
+                   'start_date': datetime.datetime(year=2018, month=1, day=1),
+                   'end_date': datetime.datetime(year=2018, month=12, day=31)})
     upload_animal_incidents = PythonOperator(
         task_id='upload_animal_incidents',
         python_callable=dds_uploads.upload_aircraft_incidents,

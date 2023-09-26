@@ -50,8 +50,8 @@ class StgController:
             if not isd_file:
                 raise
             df = pd.read_csv(filepath_or_buffer=isd_file, engine='python', encoding='utf-8', on_bad_lines='warn')
-            # WBAN could be less the 6 letters, but ncei value always have 12 chars
-            df['station'] = df['USAF'].astype(str) + df["WBAN"].astype(str).apply('{:0>6} '.format)
+            # WBAN could be less the 5 letters, but ncei value always have 11 chars
+            df['station'] = df['USAF'].astype(str).apply('{:0>6}'.format) + df["WBAN"].astype(str).apply('{:0>5}'.format)
             result_df = df.query(f"`END` >= {begging_date.replace('-', '')}").query("`CTRY` == 'US'")
             result_df = result_df[['station', 'BEGIN', 'END', 'LAT', 'LON']]
             result_df.rename(columns={'BEGIN': 'start_date', 'END': 'end_date'}, inplace=True)
@@ -70,7 +70,7 @@ class StgController:
                                     INSERT INTO {self.schema}.{table_name} ({','.join(columns)})
                                     with cte as(
                                     SELECT
-                                    '{row.station}' as station, 
+                                    '{row.station.replace(' ', '')}' as station, 
                                     {int(row.start_date)} as start_date,
                                     {int(row.end_date)} as end_date,
                                     point({row.LAT}, {row.LON}) as GEO_DATA
@@ -306,7 +306,7 @@ class StgController:
                     start_date = history_start_date
 
         if end_date is None:
-            end_date = datetime.datetime.strptime(start_date, '%Y-%m-%d') + datetime.timedelta(weeks=4)
+            end_date = datetime.datetime.strptime(start_date, '%Y-%m-%d') + datetime.timedelta(weeks=8)
             end_date = datetime.datetime.strftime(end_date, '%Y-%m-%d')
         days_difference = datetime.datetime.strptime(end_date, '%Y-%m-%d') - datetime.datetime.strptime(start_date,
                                                                                                         '%Y-%m-%d')
@@ -468,7 +468,8 @@ class StgController:
 
     def weather_data(self,
                      start_date: datetime,
-                     end_date: datetime):
+                     end_date: datetime,
+                     history_start_date=datetime.datetime(year=2018, month=1, day=1)):
         """
         Function finds out incidents in DDS.aircraft_incidents,
         which doesn't have weather records in DDS.weather_observation.
@@ -477,36 +478,52 @@ class StgController:
         param start_date: begging date of selection
         param end_date: end date of selection
         """
-        with self.pg_connect.connection() as connection:
-            cursor = connection.cursor()
-            cursor.execute(f"""TRUNCATE TABLE STAGE.weather_observation""")  # Clean up stage table
-            self.logger.info(f"Total start_date = {start_date}")
-            self.logger.info(f"Total end_date = {end_date}")
-            query = f"""
-                SELECT DISTINCT indx_nr, incident_date, time, weather_station
-                FROM DDS.aircraft_incidents
-                INNER JOIN DDS.incident_station_link link ON aircraft_incidents.indx_nr=link.index_incedent
-                WHERE incident_date between '{start_date.date()}' and '{end_date.date()}'
-                AND indx_nr not in (SELECT distinct cast(incident as int)
-                                    FROM DDS.weather_observation)
-                ORDER BY incident_date ASC"""
-            cursor.execute(query)
-            records = cursor.fetchall()
-            self.logger.info(f'Number of incidents, whose dont have weather data: {len(set(records))}')
+        if start_date is None:
+            with self.pg_connect.connection() as connect:
+                cursor = connect.cursor()
+                cursor.execute(f"""SELECT max(incident_date) FROM DDS.weather_observation;""")
+                start_date = cursor.fetchone()[0]
+                try:
+                    start_date = datetime.datetime.strftime(start_date, '%Y-%m-%d')
+                except TypeError:
+                    start_date = history_start_date
 
-        # API can receive only 50 stations at once, so task take batch with for 50 incidents at once
-        for i in range(len(records[:50])):
-            try:
-                min_date = min([x[1] for x in records[:50]])
-                self.logger.info(f'Minimal date in batch: {min_date}')
-                max_date = max([x[1] for x in records[:50]])
-                self.logger.info(f'Maximum date in batch: {max_date}')
-                stations = [x[3] for x in records[:50]]
+        if end_date is None:
+            end_date = datetime.datetime.strptime(start_date, '%Y-%m-%d') + datetime.timedelta(weeks=26)
+            end_date = datetime.datetime.strftime(end_date, '%Y-%m-%d')
+        if not start_date < end_date:
+            self.logger.warning(f"All data loaded for {end_date}")
+        else:
+            with self.pg_connect.connection() as connection:
+                cursor = connection.cursor()
+                cursor.execute(f"""TRUNCATE TABLE STAGE.weather_observation""")  # Clean up stage table
+                self.logger.info(f"Total start_date = {start_date}")
+                self.logger.info(f"Total end_date = {end_date}")
+                query = f"""
+                    SELECT DISTINCT indx_nr, incident_date, time, weather_station
+                    FROM DDS.aircraft_incidents
+                    INNER JOIN DDS.incident_station_link link ON aircraft_incidents.indx_nr=link.index_incedent
+                    WHERE incident_date between '{start_date.date()}' and '{end_date.date()}'
+                    AND indx_nr not in (SELECT distinct cast(incident as int)
+                                        FROM DDS.weather_observation)
+                    ORDER BY incident_date ASC"""
+                cursor.execute(query)
+                records = cursor.fetchall()
+                self.logger.info(f'Number of incidents, whose dont have weather data in DDS.weather_observation: {len(set(records))}')
 
-                self.receive_weather_station_data(stations_id=','.join(list(set(stations[:50]))),
-                                                  start_datetime=min_date - datetime.timedelta(hours=1),
-                                                  end_datetime=max_date + datetime.timedelta(hours=1))
-                self.load_weather_station_data(table_name="weather_observation")
-            except ValueError as e:
-                self.logger.warning(e)
-            records = records[50:]
+            # API can receive only 50 stations at once, so task take batch with for 50 incidents at once
+            for i in range(len(records[:50])):
+                try:
+                    min_date = min([x[1] for x in records[:50]])
+                    self.logger.info(f'Minimal date in batch: {min_date}')
+                    max_date = max([x[1] for x in records[:50]])
+                    self.logger.info(f'Maximum date in batch: {max_date}')
+                    stations = [x[3] for x in records[:50]]
+
+                    self.receive_weather_station_data(stations_id=','.join(list(set(stations[:50]))),
+                                                      start_datetime=min_date - datetime.timedelta(hours=1),
+                                                      end_datetime=max_date + datetime.timedelta(hours=1))
+                    self.load_weather_station_data(table_name="weather_observation")
+                except ValueError as e:
+                    self.logger.warning(e)
+                records = records[50:]
