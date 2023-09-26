@@ -319,8 +319,8 @@ class StgControler:
             response = req.get(url)
 
             # Зачищаем папку от zip файлов
-            #[clean_directory(full_path=f"{os.getcwd()}/{file}")
-            # for file in os.listdir(f"{os.getcwd()}") if file.endswith('.zip')]
+            [clean_directory(full_path=f"{os.getcwd()}/{file}")
+             for file in os.listdir(f"{os.getcwd()}/Downloads") if file.endswith('.zip')]
             self.logger.info(f"Atempt to find data between {start_date} and {end_date}. Range {days_difference.days} days")
             if response.status_code == 200:
                 options = webdriver.ChromeOptions()
@@ -362,9 +362,6 @@ class StgControler:
                             print(os.listdir(f"{os.getcwd()}"))
                             time.sleep(30)
                             pass
-                    # Зачищаем целевую папку
-                    #clean_directory(full_path=f"{os.getcwd()}/Downloads/{current_file}")
-                    #shutil.move(src=f"{os.getcwd()}/{current_file}", dst=f"{os.getcwd()}/Downloads", )
                     self.logger.info(f"file {current_file} loaded to {os.getcwd()}/Downloads")
                     self.downloaded_files_list.append(current_file)
 
@@ -419,24 +416,23 @@ class StgControler:
             """
 
         URL = f"""https://www.ncei.noaa.gov/access/services/data/v1?dataset=global-hourly&stations={station_id}&startDate={start_datetime}T00:00:00&endDate={end_datetime}T23:59:59&includeAttributes=true&format=csv"""
-        print(URL)
-        clean_directory(full_path=f"{os.getcwd()}/{station_id}")  # Зачищает папку от файлов прежних неуспешных запусков
+        self.logger.info(f"Dag trying to get data from: {URL}")
         response = req.get(URL)
         if response.status_code == 200:
             options = webdriver.ChromeOptions()
             options.add_argument('headless')
-            #driver = webdriver.Chrome(options=options)
             remote_webdriver = 'remote_chromedriver'
             with webdriver.Remote(f'{remote_webdriver}:4444/wd/hub', options=options) as driver:
                 driver.get(URL)
                 for i in range(15):
                     try:
                         time.sleep(15)
-                        print(os.listdir(f"{os.getcwd()}"))
-                        current_file = [file for file in os.listdir(f"{os.getcwd()}") if file.endswith('csv')][0]
+                        current_file = [file for file in os.listdir(f"{os.getcwd()}/Downloads")
+                                        if file.endswith('csv')][0]
                         break
                     except:
                         self.logger.warning(f"File .csv not found")
+                        print(os.listdir(f"{os.getcwd()}/Downloads"))
                         pass
                 clean_directory(full_path=f"{os.getcwd()}/Downloads/{current_file}")  # Зачищает целевую папку файла
                 shutil.move(src=f"{os.getcwd()}/{current_file}", dst=f"{os.getcwd()}/Downloads/", )
