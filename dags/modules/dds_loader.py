@@ -2,7 +2,7 @@ from datetime import datetime
 from .connections import PgConnect
 
 
-class DdsControler:
+class DdsController:
     def __init__(self, date: datetime.date,
                  pg_connect: PgConnect,
                  schema: str,
@@ -11,6 +11,25 @@ class DdsControler:
         self.pg_connect = pg_connect
         self.logger = logger
         self.schema = schema
+
+    def upload_weather_reference(self, table_name: str) -> None:
+        with self.pg_connect.connection() as connect:
+            connect.autocommit = False
+            cursor = connect.cursor()
+            query = f"""
+            INSERT INTO {self.schema}.{table_name}
+            (station, start_date, end_date, geo_data)
+            SELECT
+                station,
+                cast(start_date as varchar)::date as start_date,
+                cast(end_date as varchar)::date as end_date,
+                geo_data
+                FROM STAGE.observation_reference
+            ON CONFLICT ON CONSTRAINT observation_reference_pkey DO UPDATE SET end_date = EXCLUDED.end_date;
+            """
+            cursor.execute(query)
+            connect.commit()
+        self.logger.info(f"Observation reference updated")
 
     def upload_aircraft_incidents(self, table_name: str) -> None:
         with self.pg_connect.connection() as connect:
@@ -109,25 +128,6 @@ class DdsControler:
             cursor.execute(query)
             connect.commit()
         self.logger.info(f"Aircraft incidents reference updated")
-
-    def upload_weather_reference(self, table_name: str) -> None:
-        with self.pg_connect.connection() as connect:
-            connect.autocommit = False
-            cursor = connect.cursor()
-            query = f"""
-            INSERT INTO {self.schema}.{table_name}
-            (station, start_date, end_date, geo_data)
-            SELECT
-                station,
-                cast(start_date as varchar)::date as start_date,
-                cast(end_date as varchar)::date as end_date,
-                geo_data
-                FROM STAGE.observation_reference
-            ON CONFLICT ON CONSTRAINT observation_reference_pkey DO UPDATE SET end_date = EXCLUDED.end_date;
-            """
-            cursor.execute(query)
-            connect.commit()
-        self.logger.info(f"Observation reference updated")
 
     def update_incident_station_link(self, table_name: str):
         with self.pg_connect.connection() as connect:
