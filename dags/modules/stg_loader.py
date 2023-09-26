@@ -46,42 +46,42 @@ class StgControler:
                 except:
                     self.logger.info(f"Attemp № {i} to find file isd-history failed")
                     time.sleep(20)
-                df = pd.read_csv(filepath_or_buffer=isd_file, engine='python', encoding='utf-8', on_bad_lines='warn')
-                df['station'] = df['USAF'].astype(str) + df["WBAN"].astype(str)
-                result_df = df.query(f"`END` >= {begining_date.replace('-', '')}").query("`CTRY` == 'US'")
-                result_df = result_df[['station', 'BEGIN', 'END', 'LAT', 'LON']]
-                result_df.rename(columns={'BEGIN': 'start_date', 'END': 'end_date'}, inplace=True)
-                columns = ['station', 'start_date', 'end_date', 'GEO_DATA']
-                self.logger.info(f'Dataframe has {result_df.shape[0]} rows')
-                if not result_df.shape[0] > 0:
-                    self.logger.info(f'Dataframe is empty')
-                else:
-                    with self.pg_connect.connection() as connect:
-                        connect.autocommit = False
-                        cursor = connect.cursor()
-                        cursor.execute(f"TRUNCATE TABLE {self.schema}.{table_name};")
-                        for row in result_df.itertuples():
-                            try:
-                                query = f"""
-                                        INSERT INTO {self.schema}.{table_name} ({','.join(columns)})
-                                        with cte as(
-                                        SELECT
-                                        '{row.station}' as station, 
-                                        {int(row.start_date)} as start_date,
-                                        {int(row.end_date)} as end_date,
-                                        point({row.LAT}, {row.LON}) as GEO_DATA
-                                        )
-                                        SELECT station, start_date, end_date, GEO_DATA
-                                        FROM cte;"""
-                                cursor.execute(query)
+            df = pd.read_csv(filepath_or_buffer=isd_file, engine='python', encoding='utf-8', on_bad_lines='warn')
+            df['station'] = df['USAF'].astype(str) + df["WBAN"].astype(str)
+            result_df = df.query(f"`END` >= {begining_date.replace('-', '')}").query("`CTRY` == 'US'")
+            result_df = result_df[['station', 'BEGIN', 'END', 'LAT', 'LON']]
+            result_df.rename(columns={'BEGIN': 'start_date', 'END': 'end_date'}, inplace=True)
+            columns = ['station', 'start_date', 'end_date', 'GEO_DATA']
+            self.logger.info(f'Dataframe has {result_df.shape[0]} rows')
+            if not result_df.shape[0] > 0:
+                self.logger.info(f'Dataframe is empty')
+            else:
+                with self.pg_connect.connection() as connect:
+                    connect.autocommit = False
+                    cursor = connect.cursor()
+                    cursor.execute(f"TRUNCATE TABLE {self.schema}.{table_name};")
+                    for row in result_df.itertuples():
+                        try:
+                            query = f"""
+                                    INSERT INTO {self.schema}.{table_name} ({','.join(columns)})
+                                    with cte as(
+                                    SELECT
+                                    '{row.station}' as station, 
+                                    {int(row.start_date)} as start_date,
+                                    {int(row.end_date)} as end_date,
+                                    point({row.LAT}, {row.LON}) as GEO_DATA
+                                    )
+                                    SELECT station, start_date, end_date, GEO_DATA
+                                    FROM cte;"""
+                            cursor.execute(query)
 
-                            except Exception as e:
-                                self.logger.error(e)
-                                self.logger.info(row)
-                                pass
-                        connect.commit()
-                    self.logger.info(f'Data loaded to {self.schema}.{table_name}')
-            clean_directory(full_path=f"{os.getcwd()}/{isd_file}")
+                        except Exception as e:
+                            self.logger.error(e)
+                            self.logger.info(row)
+                            pass
+                    connect.commit()
+                self.logger.info(f'Data loaded to {self.schema}.{table_name}')
+        clean_directory(full_path=f"{os.getcwd()}/{isd_file}")
 
     def unzip_data(self) -> None:
         """

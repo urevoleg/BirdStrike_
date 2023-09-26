@@ -133,6 +133,7 @@ class DdsControler:
         with self.pg_connect.connection() as connect:
             connect.autocommit = False
             cursor = connect.cursor()
+            self.logger.info('Updating links started')
             query = f"""
             INSERT INTO {self.schema}.{table_name}
             (index_incedent, weather_station)

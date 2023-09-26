@@ -29,7 +29,6 @@ def weather_data(controller: StgControler, start_date, end_date) -> None:
             AND indx_nr not in (SELECT distinct cast(incident as int)
                                 FROM DDS.weather_observation)
             ORDER BY incident_date ASC"""
-        print(query)
         cursor.execute(query)
         records = cursor.fetchall()
         log.info(f'Выборка записей {len(set(records))}')
@@ -96,8 +95,8 @@ with DAG(
         task_id='download_weather_data',
         python_callable=weather_data,
         op_kwargs={'controller': stg_loadings,
-                   'start_date': datetime.datetime(year=2019, month=1, day=1),
-                   'end_date': datetime.datetime(year=2021, month=12, day=31)})
+                   'start_date': datetime.datetime(year=2018, month=1, day=1),
+                   'end_date': datetime.datetime(year=2018, month=12, day=31)})
     upload_animal_incidents = PythonOperator(
         task_id='upload_animal_incidents',
         python_callable=dds_uploads.upload_aircraft_incidents,
@@ -115,4 +114,6 @@ with DAG(
         python_callable=dds_uploads.update_incident_station_link,
         op_kwargs={'table_name': 'incident_station_link'})
 
-task_observation_reference >> upload_weather_reference >> task_animal_incidents >> upload_incident_station_link >> upload_animal_incidents >> task_weather_data >> upload_weather_data
+task_observation_reference >> upload_weather_reference >> upload_incident_station_link
+task_animal_incidents >> upload_animal_incidents >> upload_incident_station_link
+upload_incident_station_link >> task_weather_data >> upload_weather_data
