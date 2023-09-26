@@ -1,5 +1,5 @@
 from datetime import datetime
-from modules.connections import PgConnect
+from .connections import PgConnect
 
 
 class DdsControler:

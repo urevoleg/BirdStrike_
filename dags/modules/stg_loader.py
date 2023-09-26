@@ -308,7 +308,7 @@ class StgControler:
                     start_date = history_start_date
 
         if end_date is None:
-            end_date = datetime.datetime.strptime(start_date, '%Y-%m-%d') + datetime.timedelta(weeks=2)
+            end_date = datetime.datetime.strptime(start_date, '%Y-%m-%d') + datetime.timedelta(weeks=4)
             end_date = datetime.datetime.strftime(end_date, '%Y-%m-%d')
         days_difference = datetime.datetime.strptime(end_date, '%Y-%m-%d') - datetime.datetime.strptime(start_date,
                                                                                                         '%Y-%m-%d')
