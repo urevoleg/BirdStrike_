@@ -38,20 +38,14 @@ class StgControler:
         [clean_directory(full_path=f"{os.getcwd()}/{file}") for file in os.listdir(f"{os.getcwd()}") if
          file.startswith('isd')]
         if response.status_code == 200:
-            remote_webdriver = 'remote_chromedriver'
-            options = webdriver.ChromeOptions()
-            options.add_argument('headless')
-            with webdriver.Remote(f'{remote_webdriver}:4444/wd/hub', options=options) as driver:
-                #driver.get(download_url)
-                os.system(f"curl -O {download_url}")
-                for i in range(1, 5):
-                    try:
-                        print(os.getcwd(),os.listdir(f"{os.getcwd()}"))
-                        isd_file = [file for file in os.listdir(f"{os.getcwd()}") if file.startswith('isd-history.')][0]
-                        break
-                    except:
-                        self.logger.info(f"Attemp № {i} to find file isd-history failed")
-                        time.sleep(20)
+            os.system(f"curl -O {download_url}")
+            for i in range(1, 5):
+                try:
+                    isd_file = [file for file in os.listdir(f"{os.getcwd()}") if file.startswith('isd-history.')][0]
+                    break
+                except:
+                    self.logger.info(f"Attemp № {i} to find file isd-history failed")
+                    time.sleep(20)
                 df = pd.read_csv(filepath_or_buffer=isd_file, engine='python', encoding='utf-8', on_bad_lines='warn')
                 df['station'] = df['USAF'].astype(str) + df["WBAN"].astype(str)
                 result_df = df.query(f"`END` >= {begining_date.replace('-', '')}").query("`CTRY` == 'US'")
@@ -314,7 +308,7 @@ class StgControler:
                     start_date = history_start_date
 
         if end_date is None:
-            end_date = datetime.datetime.strptime(start_date, '%Y-%m-%d') + datetime.timedelta(weeks=8)
+            end_date = datetime.datetime.strptime(start_date, '%Y-%m-%d') + datetime.timedelta(weeks=2)
             end_date = datetime.datetime.strftime(end_date, '%Y-%m-%d')
         days_difference = datetime.datetime.strptime(end_date, '%Y-%m-%d') - datetime.datetime.strptime(start_date,
                                                                                                         '%Y-%m-%d')
@@ -325,13 +319,12 @@ class StgControler:
             response = req.get(url)
 
             # Зачищаем папку от zip файлов
-            [clean_directory(full_path=f"{os.getcwd()}/{file}")
-             for file in os.listdir(f"{os.getcwd()}") if file.endswith('.zip')]
+            #[clean_directory(full_path=f"{os.getcwd()}/{file}")
+            # for file in os.listdir(f"{os.getcwd()}") if file.endswith('.zip')]
             self.logger.info(f"Atempt to find data between {start_date} and {end_date}. Range {days_difference.days} days")
             if response.status_code == 200:
                 options = webdriver.ChromeOptions()
                 options.add_argument('headless')
-                #driver = webdriver.Chrome(options=options)  # Открытие страницы в фоновом режиме
                 remote_webdriver = 'remote_chromedriver'
                 with webdriver.Remote(f'{remote_webdriver}:4444/wd/hub', options=options) as driver:
                     driver.get(url)
@@ -353,23 +346,26 @@ class StgControler:
                                                 'div.card.airport-information > div.card-body > '
                                                 'div.card-footer.remove-margin.row > div.col-md-6.text-right.float-right > '
                                                 'span:nth-child(2)').click()
+                            self.logger.info("Download button pressed")
                             break
                         except Exception:
                             self.logger.warning(f"Attempt № {i} failed")
                             time.sleep(5)
+
                     time.sleep(days_difference.days / 2)  # Время для скачивания файла из расчета 0,5 секунды на загрузку 1 дня
-                    for i in range(1, 5):
+                    for i in range(1, 8):
                         try:
-                            current_file = [file for file in os.listdir(f"{os.getcwd()}") if file.endswith('.zip')][0]
+                            current_file = [file for file in os.listdir(f"{os.getcwd()}/Downloads/") if file.endswith('.zip')][0]
                             break
                         except:
                             self.logger.warning(f"File .zip not found")
-                            time.sleep(20)
+                            print(os.listdir(f"{os.getcwd()}"))
+                            time.sleep(30)
                             pass
                     # Зачищаем целевую папку
-                    clean_directory(full_path=f"{os.getcwd()}/Downloads/{current_file}")
-                    shutil.move(src=f"{os.getcwd()}/{current_file}", dst=f"{os.getcwd()}/Downloads", )
-                    self.logger.info(f"file {current_file} moved to {os.getcwd()}/Downloads")
+                    #clean_directory(full_path=f"{os.getcwd()}/Downloads/{current_file}")
+                    #shutil.move(src=f"{os.getcwd()}/{current_file}", dst=f"{os.getcwd()}/Downloads", )
+                    self.logger.info(f"file {current_file} loaded to {os.getcwd()}/Downloads")
                     self.downloaded_files_list.append(current_file)
 
     def load_weatherstation_data(self, table_name):
