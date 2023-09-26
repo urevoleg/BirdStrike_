@@ -366,7 +366,14 @@ class StgControler:
                     self.downloaded_files_list.append(current_file)
 
     def load_weatherstation_data(self, table_name):
-        "ПОКА под вопросом"
+        """
+        Method takes table_name, find csv file in Downloads and loading weather data in Stage
+        create URL and receive csv file with
+        all weather observations records between datetime borders
+
+        :param table_name:
+        :return:
+        """
         with self.pg_connect.connection() as connect:
             connect.autocommit = False
             cursor = connect.cursor()
@@ -405,37 +412,42 @@ class StgControler:
                 print(file, self.downloaded_files_list)
                 self.downloaded_files_list.remove(file)
 
-
     def receive_weatherstation_data(self,
-                                    station_id: str,
+                                    stations_id: str,
                                     start_datetime: datetime,
                                     end_datetime: datetime
                                     ):
         """
-        Пока под вопросом
-            """
+        Method takes stations_id, and incidents datetime borders with some lag, create URL and receive csv file with
+        all weather observations records between datetime borders
 
-        URL = f"""https://www.ncei.noaa.gov/access/services/data/v1?dataset=global-hourly&stations={station_id}&startDate={start_datetime}T00:00:00&endDate={end_datetime}T23:59:59&includeAttributes=true&format=csv"""
-        self.logger.info(f"Dag trying to get data from: {URL}")
-        response = req.get(URL)
+        :param stations_id:
+        :param start_datetime: min incidents datetime minus 1 hour
+        :param end_datetime: max incidents datetime plus 1 hour
+        :return: None
+        """
+        [clean_directory(full_path=f"{os.getcwd()}/Downloads/{file}") for file in os.listdir(f"{os.getcwd()}/Downloads") if
+         file.endswith('csv')]
+        url = f"""https://www.ncei.noaa.gov/access/services/data/v1?dataset=global-hourly&stations={stations_id}&startDate={start_datetime}T00:00:00&endDate={end_datetime}T23:59:59&includeAttributes=true&format=csv"""
+        self.logger.info(f"Dag trying to get data from: {url}")
+        response = req.get(url)
         if response.status_code == 200:
             options = webdriver.ChromeOptions()
             options.add_argument('headless')
             remote_webdriver = 'remote_chromedriver'
             with webdriver.Remote(f'{remote_webdriver}:4444/wd/hub', options=options) as driver:
-                driver.get(URL)
+                driver.get(url)
                 for i in range(15):
                     try:
-                        time.sleep(15)
                         current_file = [file for file in os.listdir(f"{os.getcwd()}/Downloads")
                                         if file.endswith('csv')][0]
                         break
-                    except:
+                    except IndexError as e:
                         self.logger.warning(f"File .csv not found")
-                        print(os.listdir(f"{os.getcwd()}/Downloads"))
+                        time.sleep(15)
                         pass
-                clean_directory(full_path=f"{os.getcwd()}/Downloads/{current_file}")  # Зачищает целевую папку файла
-                shutil.move(src=f"{os.getcwd()}/{current_file}", dst=f"{os.getcwd()}/Downloads/", )
-                time.sleep(10)
-            self.logger.info(f"file {current_file} moved to {os.getcwd()}/Downloads")
-            self.downloaded_files_list.append(current_file)
+            if current_file:
+                self.logger.info(f"file {current_file} loaded to {os.getcwd()}/Downloads")
+                self.downloaded_files_list.append(current_file)
+            else:
+                raise

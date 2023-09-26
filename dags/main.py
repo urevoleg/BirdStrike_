@@ -18,9 +18,9 @@ log = logging.getLogger(__name__)
 def weather_data(controller: StgControler, start_date, end_date) -> None:
     with controller.pg_connect.connection() as connection:
         cursor = connection.cursor()
-        cursor.execute(f"""TRUNCATE TABLE STAGE.weather_observation""")
-        log.info(f"Total start = {start_date}")
-        log.info(f"Total end = {end_date}")
+        cursor.execute(f"""TRUNCATE TABLE STAGE.weather_observation""")  # Clean up stage
+        log.info(f"Total start_date = {start_date}")
+        log.info(f"Total end_date = {end_date}")
         query = f"""
             SELECT DISTINCT indx_nr, incident_date, time, weather_station
             FROM DDS.aircraft_incidents
@@ -31,16 +31,16 @@ def weather_data(controller: StgControler, start_date, end_date) -> None:
             ORDER BY incident_date ASC"""
         cursor.execute(query)
         records = cursor.fetchall()
-        log.info(f'Выборка записей {len(set(records))}')
-    # Обрабатываем небольшими партиями, API не принимает более 50 stations
+        log.info(f'Number of incidents, whose dont have weather data: {len(set(records))}')
+    # API can receive only 50 stations at once, so dag take batch with for 50 incidents at once
     for i in range(len(records[:50])):
         min_date = min([x[1] for x in records[:50]])
-        log.info(f'Минимальная дата в партиции: {min_date}')
+        log.info(f'Minimal date in batch: {min_date}')
         max_date = max([x[1] for x in records[:50]])
-        log.info(f'Максимальная дата в партиции: {max_date}')
+        log.info(f'Maximum date in batch: {max_date}')
         stations = [x[3] for x in records[:50]]
 
-        controller.receive_weatherstation_data(station_id=','.join(list(set(stations[:50]))),
+        controller.receive_weatherstation_data(stations_id=','.join(list(set(stations[:50]))),
                                                start_datetime=min_date - datetime.timedelta(hours=1),
                                                end_datetime=max_date + datetime.timedelta(hours=1))
         controller.load_weatherstation_data(table_name="weather_observation")
@@ -95,8 +95,8 @@ with DAG(
         task_id='download_weather_data',
         python_callable=weather_data,
         op_kwargs={'controller': stg_loadings,
-                   'start_date': datetime.datetime(year=2018, month=1, day=1),
-                   'end_date': datetime.datetime(year=2018, month=12, day=31)})
+                   'start_date': datetime.datetime(year=2019, month=1, day=1),
+                   'end_date': datetime.datetime(year=2019, month=12, day=31)})
     upload_animal_incidents = PythonOperator(
         task_id='upload_animal_incidents',
         python_callable=dds_uploads.upload_aircraft_incidents,
