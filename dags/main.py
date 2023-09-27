@@ -58,9 +58,9 @@ with DAG(
     task_weather_data = PythonOperator(
         task_id='download_weather_data',
         python_callable=stg_loadings.weather_data,
-        op_kwargs={'controller': stg_loadings,
-                   'start_date': datetime.datetime(year=2018, month=1, day=1),
-                   'end_date': datetime.datetime(year=2018, month=12, day=31)})
+        op_kwargs={'start_date': datetime.datetime(year=2021, month=1, day=1),
+                   'end_date': datetime.datetime(year=2021, month=12, day=31)}
+    )
     upload_animal_incidents = PythonOperator(
         task_id='upload_animal_incidents',
         python_callable=dds_uploads.upload_aircraft_incidents,

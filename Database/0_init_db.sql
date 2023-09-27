@@ -2,16 +2,18 @@ CREATE SCHEMA IF NOT EXISTS STAGE;
 CREATE SCHEMA IF NOT EXISTS DDS;
 CREATE SCHEMA IF NOT EXISTS CDM;
 
+-- Creating user airflow for database
 DO $$
 BEGIN
 CREATE ROLE airflow superuser;
 EXCEPTION WHEN duplicate_object THEN RAISE NOTICE '%, skipping', SQLERRM USING ERRCODE = SQLSTATE;
 END
 $$;
-
 ALTER ROLE airflow login;
 
-CREATE TABLE IF NOT EXISTS STAGE.aircraft_incidents -- таблица для сырых данных об авиационных инцидентах
+-- Creating tables for stage
+
+CREATE TABLE IF NOT EXISTS STAGE.aircraft_incidents -- table for row data about aircraft
     (INDX_NR text,
     INCIDENT_DATE text,
     INCIDENT_MONTH text,
@@ -117,29 +119,14 @@ CREATE TABLE IF NOT EXISTS STAGE.aircraft_incidents -- таблица для с�
     TRANSFER text
     );
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-CREATE TABLE IF NOT EXISTS STAGE.observation_reference -- таблица для сырых данных о метеостанциях на территории США
+CREATE TABLE IF NOT EXISTS STAGE.observation_reference -- table for raw data about active weather station in USA territory
     (station varchar(40),
     start_date int,
     end_date int,
     GEO_DATA point
     );
 
-CREATE TABLE IF NOT EXISTS STAGE.weather_observation -- таблица для сырых данных о состоянии погоды
+CREATE TABLE IF NOT EXISTS STAGE.weather_observation -- table for raw data about weather observation
     (STATION varchar(40),
     incident varchar(40),
     DATE varchar(40),
@@ -151,8 +138,9 @@ CREATE TABLE IF NOT EXISTS STAGE.weather_observation -- таблица для с
     SLP varchar(40)
     );
 
+-- Creating tables for stage
 
-CREATE TABLE IF NOT EXISTS DDS.aircraft_incidents -- таблица с обработанными данными об авиационных инцидентах
+CREATE TABLE IF NOT EXISTS DDS.aircraft_incidents -- table for cleaned data about aircraft incidents
     (INDX_NR int PRIMARY KEY,
     INCIDENT_DATE date,
     INCIDENT_MONTH int,
@@ -164,15 +152,15 @@ CREATE TABLE IF NOT EXISTS DDS.aircraft_incidents -- таблица с обра�
     inc_coordinates point,
     LATITUDE double precision,
     LONGITUDE double precision,
-    RUNWAY varchar(50),--ALTER TABLE DDS.aircraft_incidents ALTER COLUMN RUNWAY TYPE varchar(50);
+    RUNWAY varchar(50),
     STATE varchar(5),
     FAAREGION varchar(10),
     LOCATION text,
     ENROUTE_STATE varchar(40),
     OPID varchar(8),
     OPERATOR varchar(50),
-    REG varchar(25), --ALTER TABLE DDS.aircraft_incidents ALTER COLUMN REG TYPE varchar(25);
-    FLT varchar(20), --ALTER TABLE DDS.aircraft_incidents ALTER COLUMN FLT TYPE varchar(20);
+    REG varchar(25),
+    FLT varchar(20),
     AIRCRAFT varchar(20),
     AMA varchar(10),
     AMO varchar(10),
@@ -258,14 +246,14 @@ CREATE TABLE IF NOT EXISTS DDS.aircraft_incidents -- таблица с обра�
     TRANSFER boolean
     );
 
-CREATE TABLE IF NOT EXISTS DDS.observation_reference -- таблица с обработанными данными о метеостанциях на территории США
+CREATE TABLE IF NOT EXISTS DDS.observation_reference -- table for cleaned data about active weather station in USA territory
     (station varchar(40) PRIMARY KEY,
     start_date date,
     end_date date,
     GEO_DATA point
     );
 
-CREATE TABLE IF NOT EXISTS DDS.incident_station_link --таблица с инцидентами и ближайшей метеостанцией
+CREATE TABLE IF NOT EXISTS DDS.incident_station_link --table with links between incident and nearest weather station
     (index_incedent int,
     weather_station varchar(40),
     FOREIGN KEY(index_incedent)
@@ -275,7 +263,7 @@ CREATE TABLE IF NOT EXISTS DDS.incident_station_link --таблица с инц�
     );
 
 
-CREATE TABLE IF NOT EXISTS DDS.weather_observation -- таблица с обработанными данными о погоде
+CREATE TABLE IF NOT EXISTS DDS.weather_observation -- table for cleaned data about weather observation
     (STATION varchar(40),
     incident varchar(40),
     weather_DATE timestamp,
@@ -288,8 +276,9 @@ CREATE TABLE IF NOT EXISTS DDS.weather_observation -- таблица с обра
     SLP varchar(40)
     );
 
+-- Creating tables for datamart
 
-CREATE TABLE IF NOT EXISTS CDM.top_ten_airports -- витрина с данными о ТОП-10 аэропортах по числу инцидентов на дату построения
+CREATE TABLE IF NOT EXISTS CDM.top_ten_airports -- table with top 10 airports data on report_dt
 (id serial,
     airport_id varchar(40),
     airport_name varchar(200),
@@ -305,11 +294,11 @@ CREATE TABLE IF NOT EXISTS CDM.top_ten_airports -- витрина с данны�
     );
 
 
-CREATE TABLE IF NOT EXISTS DDS.airport_bts_name -- справочник с именами ажророртов согласно номенклатуре BTS
+CREATE TABLE IF NOT EXISTS DDS.airport_bts_name -- reference with names according BTS
     (id varchar(50) primary key,
     bts_name varchar null);
 
-INSERT INTO DDS.airport_bts_name -- заполнение некоторых аэропортов именами согласно номенклатуре BTS
+INSERT INTO DDS.airport_bts_name -- filing reference with some bts names
 (id, bts_name)
 values
 ('KDEN', '- DENVER, CO: Denver international'),

@@ -221,5 +221,6 @@ class DdsController:
                 WHERE row_number=1
                 ;
                                                     """
+            print(query)
             cursor.execute(query)
             connect.commit()

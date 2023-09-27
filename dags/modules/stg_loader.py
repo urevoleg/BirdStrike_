@@ -92,6 +92,7 @@ class StgController:
         and save file name in self.result_files_list
 
         """
+        clean_directory(f"{os.getcwd()}/Archives/")
         for archive in self.downloaded_files_list:
             if archive.endswith('.zip'):
                 with zipfile.ZipFile(f"{os.getcwd()}/Downloads/{archive}") as archive_file:
@@ -109,6 +110,7 @@ class StgController:
         param table_name: table name for incidents in stage schema
         """
         for file_name in self.result_files_list:
+            self.logger.info(f"File {file_name} processed")
             df = pd.read_excel(io=file_name, sheet_name='data')
             with self.pg_connect.connection() as connect:
                 connect.autocommit = False
@@ -140,7 +142,6 @@ class StgController:
                 cursor = connect.cursor()
                 unloaded_rows = []
                 for row in result_df.itertuples():
-                    request_all_indexes = """SELECT indx_nr FROM DDS.aircraft_incidents"""
                     query = f"""
                         INSERT INTO {self.schema}.{table_name} ({columns})
                         with cte as(
@@ -265,7 +266,7 @@ class StgController:
                                NR_INJURIES, NR_FATALITIES, COMMENTS, REPORTER_NAME, REPORTER_TITLE, SOURCE, PERSON,
                                LUPDATE, IMAGE, TRANSFER
                         FROM cte
-                        WHERE Cast(INDX_NR as int) NOT IN ({request_all_indexes}) ON CONFLICT DO NOTHING;"""
+                        WHERE Cast(INDX_NR as int) NOT IN (SELECT indx_nr FROM DDS.aircraft_incidents) ON CONFLICT DO NOTHING;"""
                     try:
                         cursor.execute(query)
                     except Exception as e:
@@ -317,7 +318,7 @@ class StgController:
             response = req.get(url)
 
             # cleanup Downloads folder from zip files
-            [clean_directory(full_path=f"{os.getcwd()}/{file}")
+            [clean_directory(full_path=f"{os.getcwd()}/Downloads/{file}")
              for file in os.listdir(f"{os.getcwd()}/Downloads") if file.endswith('.zip')]
             self.logger.info(f"Attempt to find data between {start_date} and {end_date}. "
                              f"Range {days_difference.days} days")
@@ -489,7 +490,7 @@ class StgController:
                     start_date = history_start_date
 
         if end_date is None:
-            end_date = datetime.datetime.strptime(start_date, '%Y-%m-%d') + datetime.timedelta(weeks=26)
+            end_date = datetime.datetime.strptime(start_date, '%Y-%m-%d') + datetime.timedelta(weeks=8)
             end_date = datetime.datetime.strftime(end_date, '%Y-%m-%d')
         if not start_date < end_date:
             self.logger.warning(f"All data loaded for {end_date}")
