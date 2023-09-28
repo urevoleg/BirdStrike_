@@ -254,9 +254,9 @@ CREATE TABLE IF NOT EXISTS DDS.observation_reference -- table for cleaned data a
     );
 
 CREATE TABLE IF NOT EXISTS DDS.incident_station_link --table with links between incident and nearest weather station
-    (index_incedent int,
+    (index_incident int,
     weather_station varchar(40),
-    FOREIGN KEY(index_incedent)
+    FOREIGN KEY(index_incident)
     REFERENCES DDS.aircraft_incidents(indx_nr),
     FOREIGN KEY(weather_station)
     REFERENCES DDS.observation_reference(station)

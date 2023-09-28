@@ -12,7 +12,11 @@ class DdsController:
         self.logger = logger
         self.schema = schema
 
-    def upload_weather_reference(self, table_name: str) -> None:
+    def upload_weather_reference(self, table_name: str):
+        """
+        Method insert and update records in weather stations reference in dds layer
+        param table_name: table name of weather stations reference
+        """
         with self.pg_connect.connection() as connect:
             connect.autocommit = False
             cursor = connect.cursor()
@@ -31,7 +35,11 @@ class DdsController:
             connect.commit()
         self.logger.info(f"Observation reference updated")
 
-    def upload_aircraft_incidents(self, table_name: str) -> None:
+    def upload_aircraft_incidents(self, table_name: str):
+        """
+        Method cleans up records and filing dds layer with aircraft incidents data
+        param table_name: name of table for aircraft incidents
+        """
         with self.pg_connect.connection() as connect:
             cursor = connect.cursor()
             query = f"""
@@ -130,13 +138,17 @@ class DdsController:
         self.logger.info(f"Aircraft incidents reference updated")
 
     def update_incident_station_link(self, table_name: str):
+        """
+        Method creates link between incident and weather station based on geo data
+        param table_name: name of link table
+        """
         with self.pg_connect.connection() as connect:
             connect.autocommit = False
             cursor = connect.cursor()
             self.logger.info('Updating links started')
             query = f"""
             INSERT INTO {self.schema}.{table_name}
-            (index_incedent, weather_station)
+            (index_incident, weather_station)
             WITH incident as (
                 SELECT
                     indx_nr,
@@ -146,7 +158,7 @@ class DdsController:
                     airport, 
                     species 
                 FROM DDS.aircraft_incidents incidents
-                WHERE indx_nr not in (SELECT index_incedent FROM DDS.incident_station_link)),
+                WHERE indx_nr not in (SELECT index_incident FROM DDS.incident_station_link)),
             stations as (
                 SELECT
                     station, geo_data, start_date, end_date
@@ -174,13 +186,16 @@ class DdsController:
             connect.commit()
         self.logger.info(f"Table with links between stations and incidents updated")
 
-    def upload_weather_observation(self, table_name: str) -> None:
-        """Под вопросом"""
+    def upload_weather_observation(self, table_name: str):
+        """
+        Method finds out the nearest record to incidents datetime and save it in table_name
+
+        :param table_name: name for table with weather for each incident
+        """
         with self.pg_connect.connection() as connect:
             connect.autocommit = False
             cursor = connect.cursor()
             query = f"""
-                   SET datestyle = dmy;
                    INSERT INTO {self.schema}.{table_name}
                    (STATION, incident, weather_DATE, inc_date, WND, CIG, VIS, TMP, DEW, SLP)
 
@@ -188,7 +203,7 @@ class DdsController:
                     distinct station,
                     cast(DATE as timestamp) as date,
                     cast(concat(concat(cast(INCIDENT_DATE as varchar), ' '),cast(time as varchar)) as timestamp) as inc_ddtm,
-                    index_incedent,
+                    index_incident,
                     weather.WND, 
                     weather.CIG, 
                     weather.VIS, 
@@ -197,30 +212,30 @@ class DdsController:
                     weather.SLP 
                 FROM STAGE.weather_observation weather
                 INNER JOIN DDS.incident_station_link link ON weather.station = link.weather_station
-                INNER JOIN DDS.aircraft_incidents inc ON inc.indx_nr=link.index_incedent
-                WHERE index_incedent NOT IN (SELECT cast(incident as int) FROM {self.schema}.{table_name})
+                INNER JOIN DDS.aircraft_incidents inc ON inc.indx_nr=link.index_incident
+                WHERE index_incident NOT IN (SELECT cast(incident as int) FROM {self.schema}.{table_name})
                 AND INCIDENT_DATE <= cast(date as timestamp)
                 ),
                 calc as (
                 SELECT *, date-inc_ddtm as diff
                 FROM CTE),
                 pre as (
-                SELECT *, @EXTRACT(EPOCH FROM diff) as seconds
+                SELECT *, @EXTRACT(MINUTE FROM diff) as minutes
                 FROM calc),
                 result as (
                 SELECT *, --station, inc_ddtm, WND, CIG, VIS, TMP, DEW, SLP,
                 ROW_NUMBER () 
                                         OVER (
-                                            PARTITION BY station,index_incedent
-                                               ORDER BY seconds
+                                            PARTITION BY station,index_incident
+                                               ORDER BY minutes
                                             ) as row_number,
-                                            seconds
+                                            minutes
                 FROM pre)
-                SELECT DISTINCT station, index_incedent, date, inc_ddtm, WND, CIG, VIS, TMP, DEW, SLP
+                SELECT DISTINCT station, index_incident, date, inc_ddtm, WND, CIG, VIS, TMP, DEW, SLP
                 FROM result
                 WHERE row_number=1
                 ;
                                                     """
-            print(query)
             cursor.execute(query)
             connect.commit()
+        self.logger.info(f"{self.schema}.{table_name} updated")

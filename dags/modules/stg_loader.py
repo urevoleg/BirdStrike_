@@ -123,7 +123,7 @@ class StgController:
 
                 # necessary step because of one record in 2022 year
                 result_df = result_df.astype({'LATITUDE': str, 'LONGITUDE': str})
-                self.logger.info(f"Обрабатывается Dataframe c {result_df.shape[0]} записями")
+                self.logger.info(f"Processed Dataframe has {result_df.shape[0]} records")
                 columns = 'INDX_NR, INCIDENT_DATE, INCIDENT_MONTH, INCIDENT_YEAR, TIME, TIME_OF_DAY, AIRPORT_ID, ' \
                           'AIRPORT, inc_coordinates, LATITUDE, LONGITUDE, RUNWAY, STATE, FAAREGION, LOCATION, ' \
                           'ENROUTE_STATE, OPID, OPERATOR, REG, FLT, AIRCRAFT, AMA, AMO, EMA, EMO, AC_CLASS, AC_MASS, ' \
@@ -308,13 +308,15 @@ class StgController:
 
         if end_date is None:
             end_date = datetime.datetime.strptime(start_date, '%Y-%m-%d') + datetime.timedelta(weeks=8)
+            if end_date.date() > datetime.datetime.now().date():
+                end_date = datetime.datetime.now().date()
             end_date = datetime.datetime.strftime(end_date, '%Y-%m-%d')
         days_difference = datetime.datetime.strptime(end_date, '%Y-%m-%d') - datetime.datetime.strptime(start_date,
                                                                                                         '%Y-%m-%d')
-        if not start_date < end_date:
+        if not start_date <= end_date:
             self.logger.warning(f"All data loaded for {end_date}")
         else:
-            url = f"""https://wildlife.faa.gov/search"""  # the router redirects to the page home anyway
+            url = f"""https://wildlife.faa.gov/search"""  # the router redirects to the home page anyway
             response = req.get(url)
 
             # cleanup Downloads folder from zip files
@@ -330,7 +332,7 @@ class StgController:
                     driver.get(url)
                     driver.find_element(By.CSS_SELECTOR,
                                         '#body > app-home > div > mat-card > mat-card-content > div > div > div.row > '
-                                        'div:nth-child(1) > a').click()
+                                        'div:nth-child(1) > a').click()  # go to page search
                     time.sleep(5)
                     driver.find_element(By.NAME, 'fromDate').send_keys(start_date)
                     driver.find_element(By.NAME, 'toDate').send_keys(end_date)
@@ -361,7 +363,6 @@ class StgController:
                             break
                         except:
                             self.logger.warning(f"File .zip not found")
-                            print(os.listdir(f"{os.getcwd()}"))
                             time.sleep(30)
                             pass
                     self.logger.info(f"file {current_file} loaded to {os.getcwd()}/Downloads")
@@ -394,7 +395,6 @@ class StgController:
             columns = "STATION, DATE, WND, CIG, VIS, TMP, DEW, SLP"
             for file in self.downloaded_files_list:
                 df = pd.read_csv(f"{os.getcwd()}/Downloads/{file}")
-                print(f"Ready Dataframe with {df.shape[0]} rows")
                 if df.shape[0] > 0:
                     unloaded_rows = []
                     query = f"""
@@ -423,7 +423,6 @@ class StgController:
                     self.logger.info(f"Data is loaded")
                 else:
                     self.logger.info(f"No Data found for chosen stations")
-                print(file, self.downloaded_files_list)
                 self.downloaded_files_list.remove(file)
 
     def receive_weather_station_data(self,
@@ -503,7 +502,7 @@ class StgController:
                 query = f"""
                     SELECT DISTINCT indx_nr, incident_date, time, weather_station
                     FROM DDS.aircraft_incidents
-                    INNER JOIN DDS.incident_station_link link ON aircraft_incidents.indx_nr=link.index_incedent
+                    INNER JOIN DDS.incident_station_link link ON aircraft_incidents.indx_nr=link.index_incident
                     WHERE incident_date between '{start_date.date()}' and '{end_date.date()}'
                     AND indx_nr not in (SELECT distinct cast(incident as int)
                                         FROM DDS.weather_observation)

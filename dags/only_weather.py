@@ -45,8 +45,8 @@ with DAG(
         task_id='download_weather_data',
         python_callable=stg_loadings.weather_data,
         op_kwargs={'controller': stg_loadings,
-                   'start_date': datetime.datetime(year=2020, month=1, day=1),
-                   'end_date': datetime.datetime(year=2020, month=12, day=31)})
+                   'start_date': datetime.datetime(year=2021, month=3, day=31),
+                   'end_date': datetime.datetime(year=2021, month=4, day=30)})
     upload_weather_data = PythonOperator(
         task_id='upload_weather_data',
         python_callable=dds_uploads.upload_weather_observation,
@@ -56,4 +56,4 @@ with DAG(
         python_callable=dds_uploads.upload_weather_observation,
         op_kwargs={'table_name': 'weather_observation'})
 
-    pre_upload_weather_data >> upload_weather_data >> task_weather_data
+    pre_upload_weather_data >> task_weather_data >> upload_weather_data

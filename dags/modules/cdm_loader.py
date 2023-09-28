@@ -19,13 +19,19 @@ class CdmController:
         self.schema = schema
 
     def top_airports_traffic(self, table_name, airports_data: list, process_date: datetime.date):
+        """
+        Method load data about chosen airports from bts website and save it in table name
+        param table_name: name for result view for top 10 airports
+        param airports_data: list of airports data airport_id, airport_name, bts_name
+        param process_date: date of script work
+        """
         url = "https://www.transtats.bts.gov/Data_Elements.aspx"
         options = webdriver.ChromeOptions()
         options.add_argument('headless')
         remote_webdriver = 'remote_chromedriver'
         with webdriver.Remote(f'{remote_webdriver}:4444/wd/hub', options=options) as driver:
             driver.get(url)
-            driver.set_window_size(1920, 1080)  # Без этой опции не подгружается кнопка submit в фоновом режиме
+            driver.set_window_size(1920, 1080)  # without with submit button doesn't appear
             time.sleep(5)
             driver.find_element(By.ID, 'Link_Flights').click()
             time.sleep(5)
@@ -53,7 +59,7 @@ class CdmController:
                                                           'INTERNATIONAL': 'destination_international',
                                                           'TOTAL': 'destination_total'}, inplace=True)
                     result = origin_dataframe.merge(destination_dataframe, on=["Year", "Month"])
-                    self.logger.info(f"Подготовлен Dataframe c {result.shape[0]} записями для {bts_name}")
+                    self.logger.info(f"Created Dataframe with {result.shape[0]} rows for {bts_name}")
                     columns = ['airport_id', 'airport_name', 'Year', 'Month', 'origin_domestic', 'origin_international',
                                'origin_total', 'destination_domestic', 'destination_international', 'destination_total',
                                'report_dt']
@@ -79,12 +85,15 @@ class CdmController:
             self.logger.info(f"All data loaded to {self.schema}.{table_name}")
 
     def top_airports_csv(self):
+        """
+        Method saves all data from CDM.top_ten_airports to csv
+        """
         with self.pg_connect.connection() as connect:
             sql_query = """
                             SELECT airport_id, airport_name, year, month,
                                    origin_domestic, origin_international, origin_total,
                                    destination_domestic, destination_international, destination_total, report_dt
-                             FROM  CDM.top_ten_airports
+                             FROM CDM.top_ten_airports
                             ;
                         """
             data = pd.read_sql_query(sql_query, connect)
@@ -99,8 +108,7 @@ class CdmController:
     def top_airports(self, process_date):
         """
         Method insert data about top 10 airports by incidents with birdstrike into top_ten_airports table
-        :param process_date: date when data loaded into top_ten_airports
-        :return:
+        param process_date: date when data loaded into top_ten_airports
         """
         with self.pg_connect.connection() as connect:
             cursor = connect.cursor()
@@ -120,7 +128,6 @@ class CdmController:
     def final_view(self):
         """
         Method creates result view and save it in csv
-        ::return: None
         """
         with self.pg_connect.connection() as connect:
             cursor = connect.cursor()

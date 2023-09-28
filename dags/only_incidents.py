@@ -61,4 +61,4 @@ with DAG(
         python_callable=dds_uploads.upload_aircraft_incidents,
         op_kwargs={'table_name': 'aircraft_incidents'})
 
-pre_upload_animal_incidents >> upload_animal_incidents >> task_animal_incidents >> upload_incident_station_link
+pre_upload_animal_incidents >> task_animal_incidents >> upload_animal_incidents >> upload_incident_station_link
